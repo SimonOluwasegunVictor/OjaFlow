@@ -369,6 +369,12 @@ Current middleware foundation:
 - `business.member`: confirms the authenticated user belongs to a business and blocks access to route resources outside that business.
 - `business.admin`: confirms the authenticated user is an admin before allowing admin-only actions such as staff creation.
 
+Current permission foundation:
+
+- Staff permissions are stored on `users.permissions`.
+- Checkbox values should use `StaffPermission` enum values.
+- Frontend permissions hide screens, while backend middleware and policies protect actions.
+
 Current policy foundation:
 
 - `UserPolicy::manageStaff`: only admins attached to a business can manage staff.
@@ -471,8 +477,10 @@ Avoid early accounting-heavy language like:
 
 The app should be fast, clean, mobile-friendly, and easy for non-technical owners and staff to learn.
 
-## Next Backend Step
+## Current Backend Position
 
-The next strong backend step is to move staff management out of `AuthController` into `StaffController`, then add a `permissions` column or table.
+Staff management has been moved out of `AuthController` into `StaffController`, and MVP staff permissions are stored on `users.permissions`.
 
 For the MVP, a JSON `permissions` column on `users` is acceptable and fast to build. Later, if permissions become complex, move to normalized permission tables.
+
+The next strong backend step is Phase 2: products and stock.

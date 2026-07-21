@@ -98,49 +98,6 @@ class AuthController extends Controller
         );
     }
 
-    public function createStaff(Request $request): JsonResponse
-    {
-        $admin = $request->user();
-
-        if (Gate::denies('manageStaff', User::class)) {
-            return response()->json([
-                'message' => 'Only a business admin can create staff',
-            ], JsonResponse::HTTP_FORBIDDEN);
-        }
-
-        $payload = $request->validate([
-            'first_name' => ['required', 'string', 'max:255'],
-            'last_name' => ['required', 'string', 'max:255'],
-            'username' => ['required', 'string', 'alpha_dash:ascii', 'min:3', 'max:50', 'unique:users,username'],
-            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:255', 'unique:users,phone'],
-            'gender' => ['required', 'string', 'in:male,female,other'],
-            'address' => ['nullable', 'string', 'max:1000'],
-            'password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
-        ]);
-
-        $plainPassword = $payload['password'] ?? ('OjaFlow-' . Str::random(8) . '7!');
-
-        $staff = User::create([
-            'business_id' => $admin->business_id,
-            'first_name' => $payload['first_name'],
-            'last_name' => $payload['last_name'],
-            'username' => Str::lower($payload['username']),
-            'email' => $payload['email'] ?? null,
-            'phone' => $payload['phone'] ?? null,
-            'gender' => $payload['gender'],
-            'address' => $payload['address'] ?? null,
-            'role' => UserRole::STAFF,
-            'status' => UserStatus::ACTIVE,
-            'password' => Hash::make($plainPassword),
-        ]);
-
-        return response()->json([
-            'user' => $this->userData($staff),
-            'temporary_password' => $plainPassword,
-        ], JsonResponse::HTTP_CREATED);
-    }
-
     public function update(Request $request, $userId)
     {
         $user = User::find($userId);
@@ -249,35 +206,6 @@ class AuthController extends Controller
         return [
             'user' => $this->userData($user),
             'token' => $token,
-        ];
-    }
-
-    private function userData(User $user): array
-    {
-        $user->loadMissing('business');
-
-        return [
-            'id' => $user->id,
-            'business_id' => $user->business_id,
-            'first_name' => $user->first_name,
-            'last_name' => $user->last_name,
-            'username' => $user->username,
-            'email' => $user->email,
-            'phone' => $user->phone,
-            'gender' => $user->gender,
-            'address' => $user->address,
-            'role' => $user->role->value,
-            'status' => $user->status->value,
-            'business' => $user->business ? [
-                'id' => $user->business->id,
-                'name' => $user->business->name,
-                'email' => $user->business->email,
-                'phone' => $user->business->phone,
-                'address' => $user->business->address,
-                'logo' => $user->business->logo,
-            ] : null,
-            'created_at' => $user->created_at,
-            'updated_at' => $user->updated_at,
         ];
     }
 }

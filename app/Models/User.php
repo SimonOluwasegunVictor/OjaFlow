@@ -32,6 +32,7 @@ class User extends Authenticatable
         'address',
         'role',
         'status',
+        'permissions',
         'password',
     ];
 
@@ -55,6 +56,11 @@ class User extends Authenticatable
         return $this->status === UserStatus::ACTIVE;
     }
 
+    public function hasPermission(string $permission): bool
+    {
+        return $this->isAdmin() || in_array($permission, $this->permissions ?? [], true);
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -67,6 +73,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'role' => UserRole::class,
             'status' => UserStatus::class,
+            'permissions' => 'array',
         ];
     }
 }
