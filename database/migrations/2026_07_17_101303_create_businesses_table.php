@@ -12,14 +12,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('businesses', function (Blueprint $table) {
-            $table->ulid('id');
-            $table->foreignUlid('user_id')->constrained('users')->OnDelete('cascade');
+            $table->ulid('id')->primary();
+            $table->foreignUlid('owner_id')->constrained('users')->cascadeOnDelete();
             $table->string('name');
-            $table->string('email')->unique();
+            $table->string('email')->unique()->nullable();
+            $table->string('phone')->nullable();
+            $table->text('address')->nullable();
             $table->string('logo')->nullable();
-            $table->timestamp('created_at');
-            $table->timestamp('updated_at');
             $table->timestamps();
+        });
+
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreign('business_id')->references('id')->on('businesses')->cascadeOnDelete();
         });
     }
 
@@ -28,6 +32,10 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropForeign(['business_id']);
+        });
+
         Schema::dropIfExists('businesses');
     }
 };

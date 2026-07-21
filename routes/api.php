@@ -10,6 +10,15 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/login', [AuthController::class, 'login']);
-Route::put('/users/{userId}', [AuthController::class, 'update']);
-Route::post('/logout', [AuthController::class, 'logout']);
-Route::delete('/users/{userId}', [AuthController::class, 'delete']);
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::middleware('business.member')->group(function () {
+        Route::post('/staff', [AuthController::class, 'createStaff'])
+            ->middleware('business.admin');
+
+        Route::put('/users/{userId}', [AuthController::class, 'update']);
+        Route::delete('/users/{userId}', [AuthController::class, 'delete']);
+    });
+});

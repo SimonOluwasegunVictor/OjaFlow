@@ -2,10 +2,10 @@
 
 namespace App\Enums;
 
-enum UserRole: string
+enum UserStatus: string
 {
-    case ADMIN = 'admin';
-    case STAFF = 'staff';
+    case ACTIVE = 'active';
+    case INACTIVE = 'inactive';
 
     public static function values(): array
     {

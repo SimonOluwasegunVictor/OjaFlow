@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\UserRole;
+use App\Enums\UserStatus;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,15 +15,16 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->ulid('id')->primary();
-            $table->foreignUlid('business_id')->nullable();
+            $table->ulid('business_id')->nullable()->index();
             $table->string('first_name');
             $table->string('last_name');
             $table->enum('gender', ['male', 'female', 'other']);
-            $table->string('email')->unique();
+            $table->string('username')->unique()->nullable();
+            $table->string('email')->unique()->nullable();
             $table->string('phone')->unique()->nullable();
             $table->text('address')->nullable();
-            $table->string('role')->nullable();
-            $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('role', UserRole::values())->default(UserRole::STAFF->value);
+            $table->enum('status', UserStatus::values())->default(UserStatus::ACTIVE->value);
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();
