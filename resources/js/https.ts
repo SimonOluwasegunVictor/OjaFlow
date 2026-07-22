@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const http = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
+    baseURL: import.meta.env.VITE_API_BASE_URL ?? '/api',
     timeout: 10000,
     headers: {
         'X-Requested-With': 'XMLHttpRequest',
@@ -16,6 +16,12 @@ http.interceptors.request.use((config) => {
     if (token) {
         config.headers['X-CSRF-TOKEN'] = token.getAttribute('content');
     }
+
+    const authToken = localStorage.getItem('ojaflow_token');
+    if (authToken) {
+        config.headers.Authorization = `Bearer ${authToken}`;
+    }
+
     return config;
 });
 
