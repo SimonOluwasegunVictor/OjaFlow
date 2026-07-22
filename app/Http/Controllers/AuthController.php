@@ -33,7 +33,7 @@ class AuthController extends Controller
             'password' => ['required', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
-        $user = DB::transaction(function () use ($payload) {
+        [$user, $token] = DB::transaction(function () use ($payload) {
             $user = User::create([
                 'first_name' => $payload['first_name'],
                 'last_name' => $payload['last_name'],
@@ -55,10 +55,10 @@ class AuthController extends Controller
 
             $user->update(['business_id' => $business->id]);
 
-            return $user->load('business');
-        });
+            $token = $user->createToken('admin-token', [UserRole::ADMIN->value])->plainTextToken;
 
-        $token = $user->createToken('admin-token', [UserRole::ADMIN->value])->plainTextToken;
+            return [$user->load('business'), $token];
+        });
 
         return response()->json(
             $this->userPayload($user, $token),

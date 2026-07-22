@@ -1,7 +1,7 @@
-import { defineConfig } from 'vite';
-import laravel from 'laravel-vite-plugin';
 import vue from '@vitejs/plugin-vue';
-import path from 'node:path';
+import laravel from 'laravel-vite-plugin';
+import { fileURLToPath, URL } from 'node:url';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
     plugins: [
@@ -18,7 +18,7 @@ export default defineConfig({
 
     resolve: {
         alias: {
-            '@': path.resolve(__dirname, 'resources/js'),
+            '@': fileURLToPath(new URL('./resources/js', import.meta.url)),
         },
     },
 
@@ -27,7 +27,7 @@ export default defineConfig({
         port: 5173,
         strictPort: true,
 
-        hmr: {
+        ws: {
             host: 'ojaflow.test',
             protocol: 'wss',
             port: 5173,

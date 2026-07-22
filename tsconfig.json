@@ -9,14 +9,17 @@
     "resolveJsonModule": true,
     "esModuleInterop": true,
     "lib": ["ESNext", "DOM"],
-    "types": ["vite/client"],
+    "types": ["vite/client", "node"],
     "paths": {
       "@/*": ["./resources/js/*"]
     }
   },
   "include": [
+    "postcss.config.ts",
+    "tailwind.config.ts",
+    "vite.config.ts",
     "resources/js/**/*.ts",
     "resources/js/**/*.d.ts",
     "resources/js/**/*.vue"
-]
+  ]
 }
