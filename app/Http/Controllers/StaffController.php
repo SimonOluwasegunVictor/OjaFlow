@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\StaffPermission;
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\Branch;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -50,6 +51,7 @@ class StaffController extends Controller
         $payload = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
+            'branch_id' => ['nullable', Rule::exists('branches', 'id')->where('business_id', $admin->business_id)],
             'username' => ['required', 'string', 'alpha_dash:ascii', 'min:3', 'max:50', 'unique:users,username'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
             'phone' => ['nullable', 'string', 'max:255', 'unique:users,phone'],
@@ -64,6 +66,7 @@ class StaffController extends Controller
 
         $staff = User::create([
             'business_id' => $admin->business_id,
+            'branch_id' => $payload['branch_id'] ?? $admin->branch_id ?? $this->mainBranchId($admin->business_id),
             'first_name' => $payload['first_name'],
             'last_name' => $payload['last_name'],
             'username' => Str::lower($payload['username']),
@@ -117,6 +120,7 @@ class StaffController extends Controller
         $payload = $request->validate([
             'first_name' => ['sometimes', 'string', 'max:255'],
             'last_name' => ['sometimes', 'string', 'max:255'],
+            'branch_id' => ['sometimes', 'nullable', Rule::exists('branches', 'id')->where('business_id', $request->user()->business_id)],
             'username' => ['sometimes', 'string', 'alpha_dash:ascii', 'min:3', 'max:50', Rule::unique('users', 'username')->ignore($staff->id)],
             'email' => ['sometimes', 'nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($staff->id)],
             'phone' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('users', 'phone')->ignore($staff->id)],
@@ -249,5 +253,13 @@ class StaffController extends Controller
     private function normalizePermissions(array $permissions): array
     {
         return array_values(array_unique($permissions));
+    }
+
+    private function mainBranchId(string $businessId): ?string
+    {
+        return Branch::query()
+            ->where('business_id', $businessId)
+            ->where('is_main', true)
+            ->value('id');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Enums\UserStatus;
+use App\Models\Branch;
 use App\Models\Business;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
@@ -53,11 +54,22 @@ class AuthController extends Controller
                 'address' => $payload['business_address'] ?? null,
             ]);
 
-            $user->update(['business_id' => $business->id]);
+            $branch = Branch::create([
+                'business_id' => $business->id,
+                'name' => 'Main Branch',
+                'phone' => $business->phone,
+                'address' => $business->address,
+                'is_main' => true,
+            ]);
+
+            $user->update([
+                'business_id' => $business->id,
+                'branch_id' => $branch->id,
+            ]);
 
             $token = $user->createToken('admin-token', [UserRole::ADMIN->value])->plainTextToken;
 
-            return [$user->load('business'), $token];
+            return [$user->load(['business', 'branch']), $token];
         });
 
         return response()->json(

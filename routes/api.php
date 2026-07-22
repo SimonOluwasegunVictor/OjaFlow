@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BranchController;
 use App\Http\Controllers\StaffController;
 // use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -20,6 +21,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/users/{userId}', [AuthController::class, 'delete']);
 
         Route::middleware('business.admin')->group(function () {
+            Route::get('/branches', [BranchController::class, 'index']);
+            Route::post('/branches', [BranchController::class, 'store']);
+            Route::get('/branches/{branchId}', [BranchController::class, 'show']);
+            Route::put('/branches/{branchId}', [BranchController::class, 'update']);
+            Route::patch('/branches/{branchId}/status', [BranchController::class, 'updateStatus']);
+
             Route::get('/staff-permissions', [StaffController::class, 'permissions']);
             Route::get('/staff', [StaffController::class, 'index']);
             Route::post('/staff', [StaffController::class, 'store']);

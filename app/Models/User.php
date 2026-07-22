@@ -23,6 +23,7 @@ class User extends Authenticatable
 
     protected $fillable = [
         'business_id',
+        'branch_id',
         'first_name',
         'last_name',
         'gender',
@@ -39,6 +40,11 @@ class User extends Authenticatable
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
+    }
+
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class);
     }
 
     public function ownedBusiness(): HasOne

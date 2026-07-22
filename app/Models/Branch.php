@@ -2,28 +2,29 @@
 
 namespace App\Models;
 
+use App\Enums\BranchStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Business extends Model
+class Branch extends Model
 {
     use HasFactory, HasUlids;
 
     protected $fillable = [
-        'owner_id',
+        'business_id',
         'name',
-        'email',
         'phone',
         'address',
-        'logo',
+        'status',
+        'is_main',
     ];
 
-    public function owner(): BelongsTo
+    public function business(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'owner_id');
+        return $this->belongsTo(Business::class);
     }
 
     public function users(): HasMany
@@ -31,8 +32,11 @@ class Business extends Model
         return $this->hasMany(User::class);
     }
 
-    public function branches(): HasMany
+    protected function casts(): array
     {
-        return $this->hasMany(Branch::class);
+        return [
+            'status' => BranchStatus::class,
+            'is_main' => 'boolean',
+        ];
     }
 }

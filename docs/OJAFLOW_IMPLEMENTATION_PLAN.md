@@ -188,6 +188,27 @@ Core fields:
 - `receipt_footer`
 - `settings`
 
+### Branches
+
+Stores physical locations under a business. A business can have one or many branches.
+
+Core fields:
+
+- `id`
+- `business_id`
+- `name`
+- `phone`
+- `address`
+- `status`
+- `is_main`
+
+Branch rule:
+
+```text
+The business owns the product catalog.
+Branches own staff assignment, stock quantities, sales, payments, receipts, and reports.
+```
+
 ### Users
 
 Stores admins and staff.
@@ -196,6 +217,7 @@ Core fields:
 
 - `id`
 - `business_id`
+- `branch_id`
 - `first_name`
 - `last_name`
 - `username`
@@ -223,6 +245,35 @@ Core fields:
 - `quantity`
 - `reorder_level`
 - `status`
+
+Product rule:
+
+```text
+Products are created once for the business and can show in all branches.
+Stock quantity should not live directly on products once branches are active.
+```
+
+### Branch Product Stocks
+
+Stores product quantity per branch.
+
+Core fields:
+
+- `id`
+- `business_id`
+- `branch_id`
+- `product_id`
+- `quantity`
+- `reorder_level`
+
+Example:
+
+```text
+Dangote Cement
+Main Branch: 100 bags
+Ado Branch: 40 bags
+Ibadan Branch: 75 bags
+```
 
 ### Stock Movements
 
@@ -359,6 +410,7 @@ Debt statuses:
 
 - Auth
 - Business setup
+- Branch setup
 - Admin and staff roles
 - Staff permissions
 - Business-scoped middleware
@@ -374,6 +426,13 @@ Current permission foundation:
 - Staff permissions are stored on `users.permissions`.
 - Checkbox values should use `StaffPermission` enum values.
 - Frontend permissions hide screens, while backend middleware and policies protect actions.
+
+Current branch foundation:
+
+- Admin registration creates the business and a `Main Branch`.
+- Admins can create and update branches.
+- Staff can be assigned to a branch.
+- Products should later be business-wide, while stock quantities should be branch-specific.
 
 Current policy foundation:
 

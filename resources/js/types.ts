@@ -10,9 +10,29 @@ export interface Business {
     logo: string | null;
 }
 
+export interface Branch {
+    id: string;
+    name: string;
+    phone: string | null;
+    address: string | null;
+    status: UserStatus;
+    is_main: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface BranchResponse {
+    branch: Branch;
+}
+
+export interface BranchesResponse {
+    branches: Branch[];
+}
+
 export interface User {
     id: string;
     business_id: string | null;
+    branch_id: string | null;
     first_name: string;
     last_name: string;
     username: string | null;
@@ -24,6 +44,7 @@ export interface User {
     status: UserStatus;
     permissions: string[];
     business: Business | null;
+    branch: Branch | null;
     created_at: string;
     updated_at: string;
 }

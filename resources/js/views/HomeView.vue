@@ -1,15 +1,18 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref, watch } from 'vue';
+import { useBranchStore, type BranchForm } from '../stores/branches';
 import { useAuthStore } from '../stores/auth';
 import { useStaffStore, type StaffForm } from '../stores/staff';
-import type { User } from '../types';
+import type { Branch, User } from '../types';
 
 const auth = useAuthStore();
+const branchStore = useBranchStore();
 const staffStore = useStaffStore();
 
 const authMode = ref<'login' | 'register'>('login');
-const activePanel = ref<'overview' | 'staff' | 'profile'>('overview');
+const activePanel = ref<'overview' | 'branches' | 'staff' | 'profile'>('overview');
 const selectedStaffId = ref<string | null>(null);
+const selectedBranchId = ref<string | null>(null);
 const resetPasswordValue = ref('');
 const successMessage = ref<string | null>(null);
 
@@ -34,6 +37,7 @@ const registerForm = reactive({
 const staffForm = reactive<StaffForm>({
     first_name: '',
     last_name: '',
+    branch_id: '',
     username: '',
     email: '',
     phone: '',
@@ -41,6 +45,12 @@ const staffForm = reactive<StaffForm>({
     address: '',
     password: '',
     permissions: [],
+});
+
+const branchForm = reactive<BranchForm>({
+    name: '',
+    phone: '',
+    address: '',
 });
 
 const profileForm = reactive({
@@ -56,8 +66,10 @@ const profileForm = reactive({
 });
 
 const selectedStaff = computed(() => staffStore.staff.find((staff) => staff.id === selectedStaffId.value) ?? null);
+const selectedBranch = computed(() => branchStore.branches.find((branch) => branch.id === selectedBranchId.value) ?? null);
 const activeStaffCount = computed(() => staffStore.staff.filter((staff) => staff.status === 'active').length);
 const inactiveStaffCount = computed(() => staffStore.staff.filter((staff) => staff.status === 'inactive').length);
+const activeBranchCount = computed(() => branchStore.branches.filter((branch) => branch.status === 'active').length);
 const canManageStaff = computed(() => auth.isAdmin);
 const permissionLabels: Record<string, string> = {
     view_dashboard: 'View dashboard',
@@ -79,6 +91,7 @@ onMounted(async () => {
     hydrateProfileForm();
 
     if (auth.isAuthenticated && auth.isAdmin) {
+        await branchStore.fetchBranches().catch(() => undefined);
         await staffStore.bootstrap().catch(() => undefined);
     }
 });
@@ -92,6 +105,14 @@ watch(selectedStaff, (staff) => {
         fillStaffForm(staff);
     } else {
         resetStaffForm();
+    }
+});
+
+watch(selectedBranch, (branch) => {
+    if (branch) {
+        fillBranchForm(branch);
+    } else {
+        resetBranchForm();
     }
 });
 
@@ -120,8 +141,31 @@ async function afterAuthenticated() {
     hydrateProfileForm();
 
     if (auth.isAdmin) {
+        await branchStore.fetchBranches().catch(() => undefined);
         await staffStore.bootstrap().catch(() => undefined);
     }
+}
+
+async function submitBranch() {
+    successMessage.value = null;
+
+    if (selectedBranch.value) {
+        const success = await branchStore.updateBranch(selectedBranch.value.id, branchForm);
+        if (!success) {
+            return;
+        }
+
+        successMessage.value = 'Branch updated.';
+        return;
+    }
+
+    const success = await branchStore.createBranch(branchForm);
+    if (!success) {
+        return;
+    }
+
+    successMessage.value = 'Branch created.';
+    resetBranchForm();
 }
 
 async function submitProfile() {
@@ -178,6 +222,10 @@ async function toggleStaffStatus(staff: User) {
     await staffStore.updateStatus(staff.id, staff.status === 'active' ? 'inactive' : 'active');
 }
 
+async function toggleBranchStatus(branch: Branch) {
+    await branchStore.updateStatus(branch.id, branch.status === 'active' ? 'inactive' : 'active');
+}
+
 async function resetSelectedStaffPassword() {
     if (!selectedStaff.value) {
         return;
@@ -223,6 +271,7 @@ async function logout() {
     selectedStaffId.value = null;
     activePanel.value = 'overview';
     staffStore.$reset();
+    branchStore.$reset();
 }
 
 function hydrateProfileForm() {
@@ -242,6 +291,7 @@ function hydrateProfileForm() {
 function fillStaffForm(staff: User) {
     staffForm.first_name = staff.first_name;
     staffForm.last_name = staff.last_name;
+    staffForm.branch_id = staff.branch_id ?? '';
     staffForm.username = staff.username ?? '';
     staffForm.email = staff.email ?? '';
     staffForm.phone = staff.phone ?? '';
@@ -254,6 +304,7 @@ function fillStaffForm(staff: User) {
 function resetStaffForm() {
     staffForm.first_name = '';
     staffForm.last_name = '';
+    staffForm.branch_id = branchStore.mainBranch?.id ?? '';
     staffForm.username = '';
     staffForm.email = '';
     staffForm.phone = '';
@@ -262,6 +313,18 @@ function resetStaffForm() {
     staffForm.password = '';
     staffForm.permissions = [];
     resetPasswordValue.value = '';
+}
+
+function fillBranchForm(branch: Branch) {
+    branchForm.name = branch.name;
+    branchForm.phone = branch.phone ?? '';
+    branchForm.address = branch.address ?? '';
+}
+
+function resetBranchForm() {
+    branchForm.name = '';
+    branchForm.phone = '';
+    branchForm.address = '';
 }
 
 function togglePermission(permission: string) {
@@ -379,6 +442,7 @@ function togglePermission(permission: string) {
           </div>
           <div class="flex flex-wrap items-center gap-2">
             <button class="nav-button" :class="{ 'nav-button-active': activePanel === 'overview' }" @click="activePanel = 'overview'">Overview</button>
+            <button v-if="canManageStaff" class="nav-button" :class="{ 'nav-button-active': activePanel === 'branches' }" @click="activePanel = 'branches'">Branches</button>
             <button v-if="canManageStaff" class="nav-button" :class="{ 'nav-button-active': activePanel === 'staff' }" @click="activePanel = 'staff'">Staff</button>
             <button class="nav-button" :class="{ 'nav-button-active': activePanel === 'profile' }" @click="activePanel = 'profile'">Profile</button>
             <button class="rounded border border-slate-300 px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100" @click="logout">Logout</button>
@@ -408,6 +472,10 @@ function togglePermission(permission: string) {
               <dd class="mt-1 font-bold">{{ staffStore.staff.length }}</dd>
             </div>
             <div class="rounded bg-slate-50 p-3">
+              <dt class="text-slate-500">Branches</dt>
+              <dd class="mt-1 font-bold">{{ branchStore.branches.length }}</dd>
+            </div>
+            <div class="rounded bg-slate-50 p-3">
               <dt class="text-slate-500">Allowed actions</dt>
               <dd class="mt-1 font-bold">{{ auth.user?.role === 'admin' ? 'All' : auth.user?.permissions.length }}</dd>
             </div>
@@ -423,7 +491,7 @@ function togglePermission(permission: string) {
             <div class="grid gap-4 md:grid-cols-3">
               <div class="metric"><span>Active staff</span><strong>{{ activeStaffCount }}</strong></div>
               <div class="metric"><span>Inactive staff</span><strong>{{ inactiveStaffCount }}</strong></div>
-              <div class="metric"><span>Business status</span><strong>Active</strong></div>
+              <div class="metric"><span>Active branches</span><strong>{{ activeBranchCount }}</strong></div>
             </div>
 
             <div class="rounded border border-slate-200 bg-white p-5">
@@ -442,6 +510,71 @@ function togglePermission(permission: string) {
                 </div>
               </div>
             </div>
+          </section>
+
+          <section v-if="activePanel === 'branches' && canManageStaff" class="grid gap-6 xl:grid-cols-[1fr_420px]">
+            <div class="rounded border border-slate-200 bg-white">
+              <div class="flex items-center justify-between border-b border-slate-200 p-4">
+                <div>
+                  <h2 class="font-bold">Branches</h2>
+                  <p class="text-sm text-slate-500">Products will be shared across the business, while stock and staff can belong to branches.</p>
+                </div>
+                <button class="rounded bg-slate-950 px-3 py-2 text-sm font-bold text-white" @click="selectedBranchId = null">New branch</button>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full min-w-[680px] text-left text-sm">
+                  <thead class="bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
+                    <tr>
+                      <th class="px-4 py-3">Branch</th>
+                      <th class="px-4 py-3">Phone</th>
+                      <th class="px-4 py-3">Status</th>
+                      <th class="px-4 py-3">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-slate-100">
+                    <tr v-for="branch in branchStore.branches" :key="branch.id">
+                      <td class="px-4 py-3">
+                        <p class="font-semibold">{{ branch.name }}</p>
+                        <p class="text-xs text-slate-500">{{ branch.is_main ? 'Main branch' : branch.address }}</p>
+                      </td>
+                      <td class="px-4 py-3 text-slate-600">{{ branch.phone ?? 'Not set' }}</td>
+                      <td class="px-4 py-3">
+                        <span class="rounded px-2 py-1 text-xs font-bold capitalize" :class="branch.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-200 text-slate-700'">
+                          {{ branch.status }}
+                        </span>
+                      </td>
+                      <td class="px-4 py-3">
+                        <div class="flex gap-2">
+                          <button class="table-button" @click="selectedBranchId = branch.id">Edit</button>
+                          <button class="table-button" :disabled="branch.is_main" @click="toggleBranchStatus(branch)">
+                            {{ branch.status === 'active' ? 'Deactivate' : 'Activate' }}
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr v-if="branchStore.branches.length === 0">
+                      <td class="px-4 py-8 text-center text-slate-500" colspan="4">No branches created yet.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <form class="rounded border border-slate-200 bg-white p-5" @submit.prevent="submitBranch">
+              <h2 class="text-lg font-bold">{{ selectedBranch ? 'Edit branch' : 'Create branch' }}</h2>
+              <div class="mt-4 grid gap-3">
+                <label class="grid gap-1 text-sm font-medium">Branch name<input v-model="branchForm.name" class="field" required></label>
+                <label class="grid gap-1 text-sm font-medium">Phone<input v-model="branchForm.phone" class="field"></label>
+                <label class="grid gap-1 text-sm font-medium">Address<textarea v-model="branchForm.address" class="field min-h-20"></textarea></label>
+              </div>
+
+              <p v-if="branchStore.error" class="mt-4 rounded bg-rose-50 px-3 py-2 text-sm text-rose-700">{{ branchStore.error }}</p>
+
+              <button class="mt-5 w-full rounded bg-emerald-600 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-700" :disabled="branchStore.loading">
+                {{ branchStore.loading ? 'Saving...' : selectedBranch ? 'Update branch' : 'Create branch' }}
+              </button>
+            </form>
           </section>
 
           <section v-if="activePanel === 'staff' && canManageStaff" class="grid gap-6 xl:grid-cols-[1fr_420px]">
@@ -496,6 +629,15 @@ function togglePermission(permission: string) {
                 <div class="mt-4 grid gap-3 sm:grid-cols-2">
                   <label class="grid gap-1 text-sm font-medium">First name<input v-model="staffForm.first_name" class="field" required></label>
                   <label class="grid gap-1 text-sm font-medium">Last name<input v-model="staffForm.last_name" class="field" required></label>
+                  <label class="grid gap-1 text-sm font-medium sm:col-span-2">
+                    Branch
+                    <select v-model="staffForm.branch_id" class="field">
+                      <option value="">Use main branch</option>
+                      <option v-for="branch in branchStore.activeBranches" :key="branch.id" :value="branch.id">
+                        {{ branch.name }}
+                      </option>
+                    </select>
+                  </label>
                   <label class="grid gap-1 text-sm font-medium">Username<input v-model="staffForm.username" class="field" required></label>
                   <label class="grid gap-1 text-sm font-medium">Phone<input v-model="staffForm.phone" class="field"></label>
                   <label class="grid gap-1 text-sm font-medium">Email<input v-model="staffForm.email" type="email" class="field"></label>
