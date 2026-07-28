@@ -35,7 +35,7 @@ async function submit() {
       </div>
 
       <div class="mt-7 grid gap-5">
-        <TextField v-model="form.login" label="Phone Number or Username" placeholder="080 1234 5678 or staff_name" autocomplete="username" required />
+        <TextField v-model="form.login" label="Phone Number" placeholder="080 1234 5678" autocomplete="tel" required />
         <TextField v-model="form.password" label="Password" type="password" placeholder="Enter your password" autocomplete="current-password" required />
       </div>
 

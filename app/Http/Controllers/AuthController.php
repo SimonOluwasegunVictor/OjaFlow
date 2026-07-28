@@ -148,6 +148,12 @@ class AuthController extends Controller
         }
 
         if (!empty($payload['new_password'])) {
+            if ($isSelf && $authenticatedUser->isStaff()) {
+                throw ValidationException::withMessages([
+                    'new_password' => ['Staff passwords can only be changed by an admin'],
+                ]);
+            }
+
             if ($isSelf && empty($payload['current_password'])) {
                 throw ValidationException::withMessages([
                     'current_password' => ['Current password is required'],

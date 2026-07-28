@@ -34,16 +34,20 @@ function hydrate() {
 
 async function submit() {
   message.value = '';
-  const success = await auth.updateProfile({
+  const payload = {
     first_name: form.first_name,
     last_name: form.last_name,
     email: form.email || null,
     phone: form.phone || null,
     gender: form.gender,
     address: form.address || null,
+  };
+
+  const success = await auth.updateProfile(auth.isAdmin ? {
+    ...payload,
     current_password: form.current_password || undefined,
     new_password: form.new_password || undefined,
-  });
+  } : payload);
 
   if (success) {
     form.current_password = '';
@@ -57,7 +61,7 @@ async function submit() {
   <section class="mx-auto max-w-3xl">
     <form class="dashboard-card" @submit.prevent="submit">
       <h2 class="section-title">Profile</h2>
-      <p class="mt-1 text-sm font-medium text-slate-500">Update your personal account details and password.</p>
+      <p class="mt-1 text-sm font-medium text-slate-500">{{ auth.isAdmin ? 'Update your personal account details and password.' : 'Update your personal account details.' }}</p>
 
       <div class="mt-6 grid gap-4 sm:grid-cols-2">
         <TextField v-model="form.first_name" label="First name" />
@@ -76,8 +80,8 @@ async function submit() {
           Address
           <textarea v-model="form.address" class="field min-h-24 resize-none" />
         </label>
-        <TextField v-model="form.current_password" label="Current password" type="password" />
-        <TextField v-model="form.new_password" label="New password" type="password" />
+        <TextField v-if="auth.isAdmin" v-model="form.current_password" label="Current password" type="password" />
+        <TextField v-if="auth.isAdmin" v-model="form.new_password" label="New password" type="password" />
       </div>
 
       <p v-if="message" class="mt-4 rounded-lg bg-emerald-50 px-3 py-2 text-sm font-semibold text-emerald-700">{{ message }}</p>
