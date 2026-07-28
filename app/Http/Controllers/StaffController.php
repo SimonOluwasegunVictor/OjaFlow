@@ -51,10 +51,10 @@ class StaffController extends Controller
         $payload = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
+            'username' => ['required', 'string', 'max:255', 'alpha_dash:ascii', 'unique:users,username'],
             'branch_id' => ['nullable', Rule::exists('branches', 'id')->where('business_id', $admin->business_id)],
-            'username' => ['required', 'string', 'alpha_dash:ascii', 'min:3', 'max:50', 'unique:users,username'],
             'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users,email'],
-            'phone' => ['nullable', 'string', 'max:255', 'unique:users,phone'],
+            'phone' => ['required', 'string', 'max:255', 'unique:users,phone'],
             'gender' => ['required', 'string', 'in:male,female,other'],
             'address' => ['nullable', 'string', 'max:1000'],
             'password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
@@ -62,7 +62,7 @@ class StaffController extends Controller
             'permissions.*' => ['string', Rule::in(StaffPermission::values())],
         ]);
 
-        $plainPassword = $payload['password'] ?? ('OjaFlow-' . Str::random(8) . '7!');
+        $plainPassword = $payload['password'] ?? $this->generatedPassword($admin);
 
         $staff = User::create([
             'business_id' => $admin->business_id,
@@ -70,6 +70,7 @@ class StaffController extends Controller
             'first_name' => $payload['first_name'],
             'last_name' => $payload['last_name'],
             'username' => Str::lower($payload['username']),
+            // 'username' => $payload['username'],
             'email' => $payload['email'] ?? null,
             'phone' => $payload['phone'] ?? null,
             'gender' => $payload['gender'],
@@ -120,19 +121,15 @@ class StaffController extends Controller
         $payload = $request->validate([
             'first_name' => ['sometimes', 'string', 'max:255'],
             'last_name' => ['sometimes', 'string', 'max:255'],
+            'username' => ['sometimes', 'string', 'max:255', 'alpha_dash:ascii', Rule::unique('users', 'username')->ignore($staff->id)],
             'branch_id' => ['sometimes', 'nullable', Rule::exists('branches', 'id')->where('business_id', $request->user()->business_id)],
-            'username' => ['sometimes', 'string', 'alpha_dash:ascii', 'min:3', 'max:50', Rule::unique('users', 'username')->ignore($staff->id)],
             'email' => ['sometimes', 'nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($staff->id)],
-            'phone' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('users', 'phone')->ignore($staff->id)],
+            'phone' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('users', 'phone')->ignore($staff->id)],
             'gender' => ['sometimes', 'string', 'in:male,female,other'],
             'address' => ['sometimes', 'nullable', 'string', 'max:1000'],
             'permissions' => ['sometimes', 'array'],
             'permissions.*' => ['string', Rule::in(StaffPermission::values())],
         ]);
-
-        if (!empty($payload['username'])) {
-            $payload['username'] = Str::lower($payload['username']);
-        }
 
         if (array_key_exists('permissions', $payload)) {
             $payload['permissions'] = $this->normalizePermissions($payload['permissions']);
@@ -182,7 +179,7 @@ class StaffController extends Controller
             'password' => ['nullable', 'string', Password::min(8)->mixedCase()->numbers()->symbols()],
         ]);
 
-        $plainPassword = $payload['password'] ?? ('OjaFlow-' . Str::random(8) . '7!');
+        $plainPassword = $payload['password'] ?? $this->generatedPassword($request->user());
 
         $staff->update([
             'password' => Hash::make($plainPassword),
@@ -261,5 +258,23 @@ class StaffController extends Controller
             ->where('business_id', $businessId)
             ->where('is_main', true)
             ->value('id');
+    }
+
+    private function generatedPassword(User $admin): string
+    {
+        $admin->loadMissing('business');
+
+        $companyName = (string) ($admin->business?->name ?? 'Company');
+        $companyPrefix = Str::of($companyName)
+            ->ascii()
+            ->replaceMatches('/[^A-Za-z0-9]+/', '')
+            ->substr(0, 18)
+            ->value();
+
+        if ($companyPrefix === '') {
+            $companyPrefix = 'Company';
+        }
+
+        return $companyPrefix . '-' . Str::random(8) . '7!';
     }
 }

@@ -12,7 +12,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -24,9 +23,10 @@ class AuthController extends Controller
         $payload = $request->validate([
             'first_name' => ['required', 'string', 'max:255'],
             'last_name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:users'],
             'phone' => ['nullable', 'string', 'max:255', 'unique:users'],
             'gender' => ['required', 'string', 'in:male,female,other'],
+            'address' => ['nullable', 'string', 'max:1000'],
             'business_name' => ['required', 'string', 'max:255'],
             'business_email' => ['nullable', 'string', 'email', 'max:255', 'unique:businesses,email'],
             'business_phone' => ['nullable', 'string', 'max:255'],
@@ -41,6 +41,7 @@ class AuthController extends Controller
                 'email' => $payload['email'],
                 'phone' => $payload['phone'] ?? null,
                 'gender' => $payload['gender'],
+                'address' => $payload['address'] ?? null,
                 'role' => UserRole::ADMIN,
                 'status' => UserStatus::ACTIVE,
                 'password' => Hash::make($payload['password']),
@@ -91,6 +92,7 @@ class AuthController extends Controller
 
         $user = User::query()
             ->where('email', $payload['login'])
+            ->orWhere('phone', $payload['login'])
             ->orWhere('username', $payload['login'])
             ->first();
 
@@ -132,7 +134,6 @@ class AuthController extends Controller
         $payload = $request->validate([
             'first_name' => ['sometimes', 'string', 'max:255'],
             'last_name' => ['sometimes', 'string', 'max:255'],
-            'username' => ['sometimes', 'string', 'alpha_dash:ascii', 'min:3', 'max:50', Rule::unique('users', 'username')->ignore($user->id)],
             'email' => ['sometimes', 'nullable', 'string', 'email', 'max:255', Rule::unique('users', 'email')->ignore($user->id)],
             'phone' => ['sometimes', 'nullable', 'string', 'max:255', Rule::unique('users', 'phone')->ignore($user->id)],
             'gender' => ['sometimes', 'string', 'in:male,female,other'],
@@ -144,10 +145,6 @@ class AuthController extends Controller
 
         if (!$authenticatedUser->isAdmin()) {
             unset($payload['status']);
-        }
-
-        if (!empty($payload['username'])) {
-            $payload['username'] = Str::lower($payload['username']);
         }
 
         if (!empty($payload['new_password'])) {

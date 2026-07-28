@@ -9,6 +9,7 @@ interface RegisterPayload {
     email: string;
     phone: string;
     gender: string;
+    address: string;
     business_name: string;
     business_email: string;
     business_phone: string;
@@ -24,7 +25,6 @@ interface LoginPayload {
 interface ProfilePayload {
     first_name?: string;
     last_name?: string;
-    username?: string | null;
     email?: string | null;
     phone?: string | null;
     gender?: string;
@@ -51,7 +51,22 @@ export const useAuthStore = defineStore('auth', {
     getters: {
         isAuthenticated: (state) => Boolean(state.token && state.user),
         isAdmin: (state) => state.user?.role === 'admin',
+        isStaff: (state) => state.user?.role === 'staff',
         fullName: (state) => state.user ? `${state.user.first_name} ${state.user.last_name}` : '',
+        canUse: (state) => (permission?: string | string[]) => {
+            if (!permission) {
+                return Boolean(state.user);
+            }
+
+            if (state.user?.role === 'admin') {
+                return true;
+            }
+
+            const permissions = state.user?.permissions ?? [];
+            const required = Array.isArray(permission) ? permission : [permission];
+
+            return required.some((item) => permissions.includes(item));
+        },
     },
 
     actions: {

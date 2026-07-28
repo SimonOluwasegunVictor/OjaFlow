@@ -6,8 +6,8 @@ import type { StaffResponse, User, UserStatus } from '../types';
 export interface StaffForm {
     first_name: string;
     last_name: string;
-    branch_id: string;
     username: string;
+    branch_id: string;
     email: string;
     phone: string;
     gender: string;
@@ -139,8 +139,8 @@ function staffPayload(form: StaffForm): Record<string, string | string[] | null>
     return {
         first_name: form.first_name,
         last_name: form.last_name,
-        branch_id: form.branch_id || null,
         username: form.username,
+        branch_id: form.branch_id || null,
         email: form.email || null,
         phone: form.phone || null,
         gender: form.gender,
