@@ -27,7 +27,7 @@ const inputType = computed(() => isPassword.value && showingPassword.value ? 'te
 </script>
 
 <template>
-  <label class="grid gap-2 text-sm font-bold text-slate-900">
+  <label class="grid gap-2 text-sm font-semibold text-gray-900 dark:text-gray-200">
     <span>{{ label }}</span>
     <span class="relative block">
       <input
@@ -44,7 +44,7 @@ const inputType = computed(() => isPassword.value && showingPassword.value ? 'te
       <button
         v-if="isPassword"
         type="button"
-        class="absolute inset-y-0 right-0 grid w-12 place-items-center rounded-r-lg text-slate-400 transition hover:text-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20"
+        class="absolute inset-y-0 right-0 grid w-12 place-items-center rounded-r-lg text-gray-400 transition hover:text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary/20 dark:hover:text-gray-200"
         :aria-label="showingPassword ? 'Hide password' : 'Show password'"
         @click="showingPassword = !showingPassword"
       >

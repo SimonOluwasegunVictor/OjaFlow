@@ -218,7 +218,7 @@ async function toggleStatus() {
             type="text"
             required
             placeholder="e.g. Lekki Phase 1"
-            class="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-indigo-500/40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+            class="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
           />
         </div>
         <div>
@@ -227,7 +227,7 @@ async function toggleStatus() {
             v-model="form.phone"
             type="text"
             placeholder="080..."
-            class="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-indigo-500/40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+            class="w-full rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
           />
         </div>
         <div>
@@ -236,7 +236,7 @@ async function toggleStatus() {
             v-model="form.address"
             rows="3"
             placeholder="Street, area, city"
-            class="w-full resize-none rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-indigo-500/40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
+            class="w-full resize-none rounded-lg border border-gray-200 bg-white px-3.5 py-2.5 text-sm text-gray-900 placeholder-gray-400 transition focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:border-white/[0.08] dark:bg-white/[0.04] dark:text-white"
           />
         </div>
 

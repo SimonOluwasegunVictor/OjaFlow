@@ -39,7 +39,7 @@ function onSearchInput(event: Event) {
 </script>
 
 <template>
-  <div class="sticky top-0 z-20 border-b border-gray-200 bg-white/80 px-4 py-4 backdrop-blur-md dark:border-gray-700 dark:bg-gray-900/80 sm:px-6">
+  <div class="sticky top-0 z-20 border-b border-gray-200 bg-white/80 px-4 py-4 backdrop-blur-md dark:border-white/[0.07] dark:bg-gray-900/80 sm:px-6">
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
       <div class="flex min-w-0 flex-1 items-center gap-3">
         <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 shadow-sm">
@@ -66,7 +66,7 @@ function onSearchInput(event: Event) {
             :value="search"
             type="text"
             :placeholder="searchPlaceholder"
-            class="w-full rounded-lg border border-transparent bg-gray-100 py-2 pl-8 pr-3 text-xs text-gray-700 placeholder-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500/40 dark:bg-white/[0.06] dark:text-gray-300 dark:focus:bg-white/[0.08] sm:w-48"
+            class="w-full rounded-lg border border-transparent bg-gray-100 py-2 pl-8 pr-3 text-xs text-gray-700 placeholder-gray-400 transition-all focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/40 dark:bg-white/[0.06] dark:text-gray-300 dark:focus:bg-white/[0.08] sm:w-48"
             @input="onSearchInput"
           />
         </div>

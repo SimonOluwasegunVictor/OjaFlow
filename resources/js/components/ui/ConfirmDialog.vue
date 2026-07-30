@@ -37,26 +37,26 @@ function close() {
       leave-from-class="opacity-100"
       leave-to-class="opacity-0"
     >
-      <div v-if="open" class="fixed inset-0 z-50 grid place-items-center bg-slate-950/40 px-4 py-6 backdrop-blur-sm" role="presentation" @click.self="close">
-        <section class="w-full max-w-md rounded-xl bg-white p-5 text-slate-950 shadow-auth" role="dialog" aria-modal="true" :aria-label="title">
+      <div v-if="open" class="fixed inset-0 z-50 grid place-items-end bg-gray-950/40 px-4 py-6 backdrop-blur-sm sm:place-items-center" role="presentation" @click.self="close">
+        <section class="w-full max-w-md rounded-xl border border-gray-200 bg-white p-5 text-gray-950 shadow-auth dark:border-white/[0.08] dark:bg-gray-900 dark:text-white" role="dialog" aria-modal="true" :aria-label="title">
           <div class="flex items-start justify-between gap-4">
             <div
               class="grid h-11 w-11 shrink-0 place-items-center rounded-xl"
               :class="{
-                'bg-rose-50 text-rose-600': tone === 'danger',
-                'bg-amber-50 text-amber-700': tone === 'warning',
-                'bg-blue-50 text-primary': tone === 'primary',
+                'bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-300': tone === 'danger',
+                'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300': tone === 'warning',
+                'bg-blue-50 text-primary dark:bg-blue-500/10 dark:text-blue-300': tone === 'primary',
               }"
             >
               <AlertTriangle class="h-5 w-5" />
             </div>
-            <button class="grid h-9 w-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700" type="button" aria-label="Close dialog" @click="close">
+            <button class="grid h-9 w-9 place-items-center rounded-lg text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/[0.06] dark:hover:text-gray-200" type="button" aria-label="Close dialog" @click="close">
               <X class="h-5 w-5" />
             </button>
           </div>
 
-          <h2 class="mt-4 text-lg font-black">{{ title }}</h2>
-          <p class="mt-2 text-sm font-medium leading-6 text-slate-500">{{ description }}</p>
+          <h2 class="mt-4 text-lg font-semibold">{{ title }}</h2>
+          <p class="mt-2 text-sm font-medium leading-6 text-gray-500 dark:text-gray-400">{{ description }}</p>
 
           <div class="mt-6 grid gap-2 sm:grid-cols-2">
             <AppButton variant="secondary" @click="close">{{ cancelLabel }}</AppButton>

@@ -15,17 +15,17 @@ const closeModal = () => emit('close')
   <transition name="fade">
     <div
       v-if="show"
-      class="fixed inset-0 bg-black/40  flex items-center justify-center z-50 backdrop-blur"
+      class="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-4 backdrop-blur sm:items-center"
       @click.self="closeModal"
     >
       <transition name="scale">
         <div
           v-if="show"
-          class="bg-white dark:bg-gray-900 rounded-2xl shadow-xl w-full max-w-md max-h-[80vh] p-6 overflow-y-auto"
+          class="max-h-[85vh] w-full max-w-md overflow-y-auto rounded-xl border border-gray-200 bg-white p-5 text-gray-950 shadow-xl dark:border-white/[0.08] dark:bg-gray-900 dark:text-white sm:p-6"
           style="scrollbar-width: none;"
         >
-          <div class="flex justify-between items-center mb-4">
-            <h3 class="text-lg font-semibold">{{ title }}</h3>
+          <div class="mb-4 flex items-center justify-between gap-4">
+            <h3 class="text-base font-semibold">{{ title }}</h3>
             <button
               @click="closeModal"
               class="flex h-8 w-8 items-center justify-center rounded-lg border border-gray-200 dark:border-white/[0.08] text-gray-400 hover:bg-gray-50 dark:hover:bg-white/[0.04] transition-colors cursor-pointer"

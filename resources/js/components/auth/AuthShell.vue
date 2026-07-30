@@ -13,7 +13,7 @@ import { Store } from 'lucide-vue-next';
             <Store class="h-8 w-8" />
           </div>
           <div>
-            <h1 class="text-3xl font-black tracking-normal sm:text-4xl">OjaFlow</h1>
+            <h1 class="text-3xl font-semibold tracking-normal sm:text-4xl">OjaFlow</h1>
             <p class="mt-2 text-sm font-medium leading-6 text-blue-100">
               Sales, Stock and Debt Book<br>for Nigerian Businesses
             </p>

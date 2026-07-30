@@ -10,14 +10,15 @@ import {
   Home,
   LogOut,
   Package,
-  Plus,
   Settings,
   ShoppingCart,
+  SunMoon,
   Users,
 } from 'lucide-vue-next';
 import { useAuthStore } from '../stores/auth';
 import { useBranchStore } from '../stores/branches';
 import { useStaffStore } from '../stores/staff';
+import { useThemeStore } from '../stores/theme';
 import BrandMark from '../components/dashboard/BrandMark.vue';
 import MobileTopBar from '../components/dashboard/MobileTopBar.vue';
 import BottomNav from '../components/dashboard/BottomNav.vue';
@@ -26,6 +27,7 @@ import ConfirmDialog from '../components/ui/ConfirmDialog.vue';
 const auth = useAuthStore();
 const branches = useBranchStore();
 const staff = useStaffStore();
+const theme = useThemeStore();
 const route = useRoute();
 const router = useRouter();
 const confirmingLogout = ref(false);
@@ -64,11 +66,11 @@ async function logout() {
 </script>
 
 <template>
-  <main class="min-h-dvh bg-slate-50 text-slate-950">
+  <main class="min-h-dvh bg-gray-50 text-gray-950 transition-colors dark:bg-gray-950 dark:text-gray-100">
     <MobileTopBar :title="title" :business-name="auth.user?.business?.name" :can-record-sale="auth.canUse('record_sales')" />
 
-    <aside class="fixed inset-y-0 left-0 z-40 hidden w-60 border-r border-slate-200 bg-white lg:flex lg:flex-col">
-      <div class="border-b border-slate-100 px-5 py-5">
+    <aside class="fixed inset-y-0 left-0 z-40 hidden w-60 border-r border-gray-200 bg-white dark:border-white/[0.07] dark:bg-gray-900 lg:flex lg:flex-col">
+      <div class="border-b border-gray-100 px-5 py-5 dark:border-white/[0.06]">
         <BrandMark :business-name="auth.user?.business?.name" />
       </div>
 
@@ -77,7 +79,7 @@ async function logout() {
           v-for="link in links"
           :key="link.name"
           :to="{ name: link.name }"
-          class="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-bold text-slate-600 transition hover:bg-slate-100"
+          class="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]"
           active-class="bg-primary text-white shadow-soft hover:bg-primary"
         >
           <component :is="link.icon" class="h-5 w-5" />
@@ -85,18 +87,18 @@ async function logout() {
         </RouterLink>
       </nav>
 
-      <div class="border-t border-slate-100 px-5 py-4">
-        <RouterLink :to="{ name: 'profile' }" class="flex items-center gap-3 rounded-lg p-2 hover:bg-slate-50">
-          <div class="grid h-11 w-11 place-items-center rounded-full bg-blue-100 text-sm font-black text-primary">
+      <div class="border-t border-gray-100 px-5 py-4 dark:border-white/[0.06]">
+        <RouterLink :to="{ name: 'profile' }" class="flex items-center gap-3 rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-white/[0.04]">
+          <div class="grid h-11 w-11 place-items-center rounded-full bg-blue-100 text-sm font-semibold text-primary dark:bg-blue-500/10 dark:text-blue-300">
             {{ auth.user?.first_name.slice(0, 1) }}{{ auth.user?.last_name.slice(0, 1) }}
           </div>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-black">{{ auth.fullName }}</p>
-            <p class="truncate text-xs font-medium capitalize text-slate-400">{{ auth.user?.role }} / {{ auth.user?.status }}</p>
+            <p class="truncate text-sm font-semibold">{{ auth.fullName }}</p>
+            <p class="truncate text-xs font-medium capitalize text-gray-400 dark:text-gray-500">{{ auth.user?.role }} / {{ auth.user?.status }}</p>
           </div>
-          <ChevronRight class="h-4 w-4 text-slate-400" />
+          <ChevronRight class="h-4 w-4 text-gray-400" />
         </RouterLink>
-        <button class="mt-2 flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-bold text-slate-500 hover:bg-slate-100" type="button" @click="confirmingLogout = true">
+        <button class="mt-2 flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-semibold text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]" type="button" @click="confirmingLogout = true">
           <LogOut class="h-4 w-4" />
           Sign Out
         </button>
@@ -104,21 +106,16 @@ async function logout() {
     </aside>
 
     <section class="lg:pl-60">
-      <header class="sticky top-0 z-20 hidden h-16 items-center justify-between border-b border-slate-200 bg-white/95 px-6 backdrop-blur lg:flex">
-        <h1 class="text-lg font-black">{{ title }}</h1>
+      <header class="sticky top-0 z-20 hidden h-16 items-center justify-between border-b border-gray-200 bg-white/90 px-6 backdrop-blur lg:flex dark:border-white/[0.07] dark:bg-gray-900/85">
+        <h1 class="text-lg font-semibold">{{ title }}</h1>
         <div class="flex items-center gap-3">
-          <button class="relative grid h-10 w-10 place-items-center rounded-lg text-slate-700 hover:bg-slate-100" type="button" aria-label="Notifications">
+          <button class="grid h-10 w-10 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]" type="button" aria-label="Toggle dark mode" @click="theme.toggleDarkMode()">
+            <SunMoon class="h-5 w-5" />
+          </button>
+          <button class="relative grid h-10 w-10 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]" type="button" aria-label="Notifications">
             <Bell class="h-5 w-5" />
             <span class="absolute right-2 top-2 h-2 w-2 rounded-full bg-rose-500" />
           </button>
-          <RouterLink
-            v-if="auth.canUse('record_sales')"
-            :to="{ name: 'record-sale' }"
-            class="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-primary px-4 text-sm font-bold text-white shadow-soft transition hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary/40 focus:ring-offset-2"
-          >
-            <Plus class="h-4 w-4" />
-            Record Sale
-          </RouterLink>
         </div>
       </header>
 

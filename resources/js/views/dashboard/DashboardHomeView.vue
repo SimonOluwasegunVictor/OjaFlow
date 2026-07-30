@@ -53,8 +53,8 @@ const permissionCards = computed(() => [
   <div class="space-y-6">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
       <div>
-        <h2 class="text-xl font-black text-slate-950">Welcome, {{ auth.user?.first_name }}</h2>
-        <p class="mt-1 text-sm font-medium text-slate-500">{{ auth.user?.business?.name }} - {{ auth.isStaff ? 'Staff dashboard' : 'Admin dashboard' }}</p>
+        <h2 class="text-xl font-semibold text-gray-950 dark:text-white">Welcome, {{ auth.user?.first_name }}</h2>
+        <p class="mt-1 text-sm font-medium text-gray-500 dark:text-gray-400">{{ auth.user?.business?.name }} - {{ auth.isStaff ? 'Staff dashboard' : 'Admin dashboard' }}</p>
       </div>
       <RouterLink
         v-if="auth.canUse('record_sales')"
@@ -77,26 +77,26 @@ const permissionCards = computed(() => [
           v-for="action in quickActions"
           :key="action.label"
           :to="{ name: action.route }"
-          class="inline-flex min-h-11 items-center justify-start gap-2 rounded-lg px-4 text-sm font-bold transition focus:outline-none focus:ring-2 focus:ring-offset-2"
-          :class="action.primary ? 'bg-primary text-white shadow-soft hover:bg-primary-700 focus:ring-primary/40' : 'border border-slate-200 bg-white text-slate-900 shadow-card hover:bg-slate-50 focus:ring-primary/25'"
+          class="inline-flex min-h-11 items-center justify-start gap-2 rounded-lg px-4 text-sm font-semibold transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-gray-950"
+          :class="action.primary ? 'bg-primary text-white shadow-soft hover:bg-primary-700 focus:ring-primary/40' : 'border border-gray-200 bg-white text-gray-700 shadow-card hover:bg-gray-50 focus:ring-primary/25 dark:border-white/[0.08] dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-white/[0.04]'"
         >
-          <component :is="action.icon" class="h-4 w-4" :class="action.primary ? 'text-white' : 'text-slate-500'" />
+          <component :is="action.icon" class="h-4 w-4" :class="action.primary ? 'text-white' : 'text-gray-500 dark:text-gray-400'" />
           {{ action.label }}
         </RouterLink>
       </div>
-      <p v-else class="rounded-lg border border-slate-200 bg-white p-4 text-sm font-semibold text-slate-500 shadow-card">No quick actions are enabled for this account yet.</p>
+      <p v-else class="rounded-xl border border-gray-200 bg-white p-4 text-sm font-semibold text-gray-500 shadow-card dark:border-white/[0.07] dark:bg-gray-800 dark:text-gray-400">No quick actions are enabled for this account yet.</p>
     </section>
 
     <section v-if="auth.isStaff" class="dashboard-card">
       <h2 class="section-title">Your Access</h2>
       <div v-if="permissionCards.length" class="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <article v-for="item in permissionCards" :key="item.label" class="rounded-lg border border-slate-200 p-4">
+        <article v-for="item in permissionCards" :key="item.label" class="rounded-xl border border-gray-200 p-4 dark:border-white/[0.07]">
           <component :is="item.icon" class="h-5 w-5 text-primary" />
-          <h3 class="mt-3 text-sm font-black text-slate-950">{{ item.label }}</h3>
-          <p class="mt-1 text-xs font-medium leading-5 text-slate-500">{{ item.description }}</p>
+          <h3 class="mt-3 text-sm font-semibold text-gray-950 dark:text-white">{{ item.label }}</h3>
+          <p class="mt-1 text-xs font-medium leading-5 text-gray-500 dark:text-gray-400">{{ item.description }}</p>
         </article>
       </div>
-      <p v-else class="mt-4 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900">Your admin has not enabled any dashboard permissions for this staff account yet.</p>
+      <p v-else class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm font-semibold text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300">Your admin has not enabled any dashboard permissions for this staff account yet.</p>
     </section>
 
     <section v-if="auth.canUse('view_reports')" class="grid gap-4 xl:grid-cols-[1fr_0.95fr]">
@@ -107,23 +107,23 @@ const permissionCards = computed(() => [
     <section v-if="auth.canUse('view_sales')" class="dashboard-card">
       <div class="flex items-center justify-between gap-3">
         <h2 class="section-title">Recent Sales</h2>
-        <RouterLink :to="{ name: 'sales-history' }" class="text-sm font-black text-primary">View all</RouterLink>
+        <RouterLink :to="{ name: 'sales-history' }" class="text-sm font-semibold text-primary dark:text-blue-300">View all</RouterLink>
       </div>
-      <div class="mt-5 divide-y divide-slate-100">
+      <div class="mt-5 divide-y divide-gray-100 dark:divide-white/[0.06]">
         <div v-for="sale in sales" :key="sale.order" class="flex items-center gap-3 py-4">
-          <div class="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-xs font-black text-slate-500">{{ sale.name.slice(0, 1) }}</div>
+          <div class="grid h-9 w-9 place-items-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">{{ sale.name.slice(0, 1) }}</div>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-black text-slate-950">{{ sale.name }}</p>
-            <p class="text-xs font-medium text-slate-400">{{ sale.order }}</p>
+            <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ sale.name }}</p>
+            <p class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ sale.order }}</p>
           </div>
           <div class="text-right">
-            <p class="text-sm font-black">{{ sale.amount }}</p>
+            <p class="text-sm font-semibold">{{ sale.amount }}</p>
             <span
               class="mt-1 inline-flex rounded-full px-2 py-1 text-xs font-bold"
               :class="{
-                'border border-emerald-200 bg-emerald-50 text-emerald-700': sale.status === 'Paid',
-                'border border-amber-200 bg-amber-50 text-amber-700': sale.status === 'Partial',
-                'border border-rose-200 bg-rose-50 text-rose-700': sale.status === 'Unpaid',
+                'border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300': sale.status === 'Paid',
+                'border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300': sale.status === 'Partial',
+                'border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300': sale.status === 'Unpaid',
               }"
             >
               {{ sale.status }}
@@ -133,18 +133,18 @@ const permissionCards = computed(() => [
       </div>
     </section>
 
-    <section v-if="auth.canUse('view_stock')" class="rounded-lg border border-amber-300 bg-amber-50 p-4 sm:p-5">
-      <h2 class="flex items-center gap-2 text-sm font-black text-amber-900">
+    <section v-if="auth.canUse('view_stock')" class="rounded-xl border border-amber-300 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10 sm:p-5">
+      <h2 class="flex items-center gap-2 text-sm font-semibold text-amber-900 dark:text-amber-300">
         <PackageX class="h-4 w-4" />
         Low Stock Alert
       </h2>
       <div class="mt-4 grid gap-2">
-        <div v-for="item in lowStock" :key="item.name" class="flex items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white p-4 shadow-card">
+        <div v-for="item in lowStock" :key="item.name" class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-card dark:border-white/[0.07] dark:bg-gray-800">
           <div class="min-w-0">
-            <p class="truncate text-sm font-black">{{ item.name }}</p>
-            <p class="mt-1 text-xs font-medium text-slate-400">{{ item.detail }}</p>
+            <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ item.name }}</p>
+            <p class="mt-1 text-xs font-medium text-gray-400 dark:text-gray-500">{{ item.detail }}</p>
           </div>
-          <RouterLink v-if="auth.canUse('adjust_stock')" :to="{ name: auth.isAdmin ? 'branches' : 'stock' }" class="shrink-0 text-sm font-black text-primary">Add Stock</RouterLink>
+          <RouterLink v-if="auth.canUse('adjust_stock')" :to="{ name: auth.isAdmin ? 'branches' : 'stock' }" class="shrink-0 text-sm font-semibold text-primary dark:text-blue-300">Add Stock</RouterLink>
         </div>
       </div>
     </section>

@@ -16,14 +16,14 @@ const links = computed(() => [
 </script>
 
 <template>
-  <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur lg:hidden">
+  <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-gray-200 bg-white/95 px-2 pb-[max(env(safe-area-inset-bottom),0.5rem)] pt-2 shadow-[0_-12px_30px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/[0.07] dark:bg-gray-900/95 lg:hidden">
     <div class="mx-auto grid max-w-md gap-1" :style="{ gridTemplateColumns: `repeat(${links.length}, minmax(0, 1fr))` }">
       <RouterLink
         v-for="link in links"
         :key="`${link.name}-${link.label}`"
         :to="{ name: link.name }"
-        class="grid min-h-12 justify-items-center gap-1 rounded-lg px-1 py-1 text-[11px] font-bold text-slate-500"
-        active-class="bg-blue-50 text-primary"
+        class="grid min-h-12 justify-items-center gap-1 rounded-lg px-1 py-1 text-[11px] font-semibold text-gray-500 dark:text-gray-500"
+        active-class="bg-blue-50 text-primary dark:bg-blue-500/10 dark:text-blue-300"
       >
         <component :is="link.icon" class="h-5 w-5" />
         <span>{{ link.label }}</span>

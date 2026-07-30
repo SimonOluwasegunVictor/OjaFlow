@@ -16,7 +16,7 @@ const days = [
     <div class="mt-6 flex h-40 items-end justify-between gap-4 px-3 sm:h-44 sm:px-8">
       <div v-for="day in days" :key="day.label" class="grid flex-1 justify-items-center gap-2">
         <div class="w-full max-w-5 rounded-t-md bg-primary" :style="{ height: `${day.value}%` }" />
-        <span class="text-xs font-semibold text-slate-400">{{ day.label }}</span>
+        <span class="text-xs font-semibold text-gray-400 dark:text-gray-500">{{ day.label }}</span>
       </div>
     </div>
   </section>
