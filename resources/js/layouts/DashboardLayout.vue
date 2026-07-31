@@ -4,7 +4,6 @@ import { useRoute, useRouter } from 'vue-router';
 import {
   Bell,
   Boxes,
-  ChevronRight,
   CreditCard,
   History,
   Home,
@@ -36,8 +35,7 @@ const links = computed(() => [
   { name: 'dashboard', label: 'Dashboard', icon: Home, show: true },
   { name: 'record-sale', label: 'Record Sale', icon: ShoppingCart, show: auth.canUse('record_sales') },
   { name: 'products', label: 'Products', icon: Package, show: auth.canUse('manage_products') },
-  { name: 'branches', label: 'Branches', icon: Boxes, show: auth.isAdmin },
-  { name: 'stock', label: 'Stock', icon: Boxes, show: auth.isStaff && auth.canUse(['view_stock', 'adjust_stock']) },
+  { name: 'stock', label: 'Stock', icon: Boxes, show: auth.canUse(['view_stock', 'adjust_stock', 'manage_products']) },
   { name: 'customers', label: 'Customers', icon: Users, show: auth.canUse('manage_customers') },
   { name: 'debts', label: 'Debts', icon: CreditCard, show: auth.canUse('record_debt_payments') },
   { name: 'sales-history', label: 'Sales History', icon: History, show: auth.canUse(['view_sales', 'view_reports']) },
@@ -69,17 +67,17 @@ async function logout() {
   <main class="min-h-dvh bg-gray-50 text-gray-950 transition-colors dark:bg-gray-950 dark:text-gray-100">
     <MobileTopBar :title="title" :business-name="auth.user?.business?.name" :can-record-sale="auth.canUse('record_sales')" />
 
-    <aside class="fixed inset-y-0 left-0 z-40 hidden w-60 border-r border-gray-200 bg-white dark:border-white/[0.07] dark:bg-gray-900 lg:flex lg:flex-col">
-      <div class="border-b border-gray-100 px-5 py-5 dark:border-white/[0.06]">
+    <aside class="fixed inset-y-0 left-0 z-40 hidden w-[229px] border-r border-gray-200 bg-white dark:border-white/[0.07] dark:bg-gray-900 lg:flex lg:flex-col">
+      <div class="border-b border-gray-100 px-3.5 py-3.5 dark:border-white/[0.06]">
         <BrandMark :business-name="auth.user?.business?.name" />
       </div>
 
-      <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-4">
+      <nav class="flex-1 space-y-1 overflow-y-auto px-3 py-5">
         <RouterLink
           v-for="link in links"
           :key="link.name"
           :to="{ name: link.name }"
-          class="flex min-h-11 items-center gap-3 rounded-lg px-3 text-sm font-semibold text-gray-600 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]"
+          class="flex min-h-10 items-center gap-3 rounded-lg px-3 text-sm font-medium text-slate-700 transition hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]"
           active-class="bg-primary text-white shadow-soft hover:bg-primary"
         >
           <component :is="link.icon" class="h-5 w-5" />
@@ -87,16 +85,15 @@ async function logout() {
         </RouterLink>
       </nav>
 
-      <div class="border-t border-gray-100 px-5 py-4 dark:border-white/[0.06]">
+      <div class="border-t border-gray-100 px-3.5 py-4 dark:border-white/[0.06]">
         <RouterLink :to="{ name: 'profile' }" class="flex items-center gap-3 rounded-lg p-2 hover:bg-gray-50 dark:hover:bg-white/[0.04]">
-          <div class="grid h-11 w-11 place-items-center rounded-full bg-blue-100 text-sm font-semibold text-primary dark:bg-blue-500/10 dark:text-blue-300">
+          <div class="grid h-8 w-8 place-items-center rounded-full bg-blue-100 text-xs font-semibold text-primary dark:bg-blue-500/10 dark:text-blue-300">
             {{ auth.user?.first_name.slice(0, 1) }}{{ auth.user?.last_name.slice(0, 1) }}
           </div>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-semibold">{{ auth.fullName }}</p>
+            <p class="truncate text-xs font-semibold">{{ auth.fullName }}</p>
             <p class="truncate text-xs font-medium capitalize text-gray-400 dark:text-gray-500">{{ auth.user?.role }} / {{ auth.user?.status }}</p>
           </div>
-          <ChevronRight class="h-4 w-4 text-gray-400" />
         </RouterLink>
         <button class="mt-2 flex min-h-10 w-full items-center gap-3 rounded-lg px-3 text-sm font-semibold text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]" type="button" @click="confirmingLogout = true">
           <LogOut class="h-4 w-4" />
@@ -105,11 +102,11 @@ async function logout() {
       </div>
     </aside>
 
-    <section class="lg:pl-60">
-      <header class="sticky top-0 z-20 hidden h-16 items-center justify-between border-b border-gray-200 bg-white/90 px-6 backdrop-blur lg:flex dark:border-white/[0.07] dark:bg-gray-900/85">
-        <h1 class="text-lg font-semibold">{{ title }}</h1>
+    <section class="lg:pl-[229px]">
+      <header class="sticky top-0 z-20 hidden h-14 items-center justify-between border-b border-gray-200 bg-white/90 px-6 backdrop-blur lg:flex dark:border-white/[0.07] dark:bg-gray-900/85">
+        <h1 class="text-base font-semibold text-slate-950">{{ title }}</h1>
         <div class="flex items-center gap-3">
-          <button class="grid h-10 w-10 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]" type="button" aria-label="Toggle dark mode" @click="theme.toggleDarkMode()">
+          <button class="hidden h-10 w-10 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]" type="button" aria-label="Toggle dark mode" @click="theme.toggleDarkMode()">
             <SunMoon class="h-5 w-5" />
           </button>
           <button class="relative grid h-10 w-10 place-items-center rounded-lg text-gray-600 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/[0.06]" type="button" aria-label="Notifications">
@@ -119,7 +116,7 @@ async function logout() {
         </div>
       </header>
 
-      <div class="mx-auto w-full max-w-[1680px] px-4 pb-24 pt-4 sm:px-6 lg:px-6 lg:pb-8">
+      <div class="w-full px-4 pb-24 pt-4 sm:px-6 lg:px-6 lg:pb-8 lg:pt-6">
         <RouterView />
       </div>
     </section>

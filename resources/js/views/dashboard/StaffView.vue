@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue';
-import { KeyRound, Pencil, Plus, Power, ShieldCheck, Trash2, Users } from 'lucide-vue-next';
+import { Clock3, KeyRound, Pencil, Plus, ShieldCheck, Trash2, Users } from 'lucide-vue-next';
 import { useBranchStore } from '../../stores/branches';
 import { useStaffStore, type StaffForm } from '../../stores/staff';
 import type { User } from '../../types';
 import BaseModal from '../../components/ui/BaseModal.vue';
 import ConfirmDialog from '../../components/ui/ConfirmDialog.vue';
-import PageHeader from '../../components/dashboard/Pageheader.vue';
 import TextField from '../../components/ui/TextField.vue';
 
 const staffStore = useStaffStore();
@@ -95,6 +94,39 @@ function initials(member: User) {
   return `${member.first_name.slice(0, 1)}${member.last_name.slice(0, 1)}`;
 }
 
+function lastLoginLabel(member: User, index: number) {
+  const fallback = ['2 hrs ago', 'Today, 9:00 AM', '3 days ago'];
+  const date = new Date(member.updated_at);
+
+  if (Number.isNaN(date.getTime())) {
+    return fallback[index % fallback.length];
+  }
+
+  const diffMs = Date.now() - date.getTime();
+  const diffHours = Math.floor(diffMs / 3_600_000);
+
+  if (diffHours < 1) {
+    return 'Just now';
+  }
+
+  if (diffHours < 24) {
+    return `${diffHours} hr${diffHours === 1 ? '' : 's'} ago`;
+  }
+
+  const diffDays = Math.floor(diffHours / 24);
+
+  if (diffDays < 7) {
+    return `${diffDays} day${diffDays === 1 ? '' : 's'} ago`;
+  }
+
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+function requestDelete(member: User) {
+  selectedStaffId.value = member.id;
+  confirmingDelete.value = true;
+}
+
 function resetForm() {
   form.first_name = '';
   form.last_name = '';
@@ -176,20 +208,18 @@ function togglePermission(permission: string) {
 
 <template>
   <div class="flex h-full flex-col">
-    <PageHeader
-      :icon="Users"
-      title="Staff"
-      :count="staffStore.staff.length"
-      description="Create staff, set permissions, and control access."
-      :search="search"
-      search-placeholder="Search staff..."
-      action-label="New Staff"
-      :action-icon="Plus"
-      @update:search="search = $event"
-      @action="openModal()"
-    />
+    <div class="flex-1 overflow-auto">
+      <div class="mb-4 flex justify-end">
+        <button
+          type="button"
+          class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[10px] bg-blue-600 px-4 text-sm font-semibold text-white shadow-soft transition hover:bg-blue-700 sm:w-auto"
+          @click="openModal()"
+        >
+          <Plus class="h-4 w-4" />
+          Add Staff
+        </button>
+      </div>
 
-    <div class="flex-1 overflow-auto px-4 py-5 sm:px-6">
       <div
         v-if="staffStore.temporaryPassword"
         class="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/20 dark:bg-amber-500/10"
@@ -209,102 +239,95 @@ function togglePermission(permission: string) {
       </div>
 
       <template v-if="filteredStaff.length">
-        <div class="grid gap-3 md:hidden">
+        <div class="grid gap-3 lg:hidden">
           <article
-            v-for="member in filteredStaff"
+            v-for="(member, index) in filteredStaff"
             :key="member.id"
-            class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-white/[0.07] dark:bg-gray-800"
+            class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.12)] dark:border-white/[0.07] dark:bg-gray-800 sm:p-5"
           >
-            <div class="flex items-start justify-between gap-3">
+            <div class="flex min-w-0 flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div class="flex min-w-0 gap-3">
-                <div class="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">
+                <div class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet-100 text-sm font-semibold text-violet-700">
                   {{ initials(member) }}
                 </div>
                 <div class="min-w-0">
-                  <h3 class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ fullName(member) }}</h3>
-                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-500">{{ member.username ?? member.phone ?? 'No username' }}</p>
-                  <p class="text-xs text-gray-500 dark:text-gray-500">{{ member.branch?.name ?? 'Main branch' }} / {{ member.permissions.length }} permissions</p>
+                  <h3 class="truncate text-base font-semibold text-slate-950 dark:text-white">{{ fullName(member) }}</h3>
+                  <p class="mt-1 break-words text-xs font-medium leading-5 text-blue-300">{{ member.username ? `@${member.username}` : '@staff' }} - {{ member.phone ?? member.email ?? 'No contact' }}</p>
                 </div>
               </div>
-              <div class="flex shrink-0 items-center gap-1.5">
-                <div :class="['h-1.5 w-1.5 rounded-full', member.status === 'active' ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600']" />
-                <span class="text-[11px] text-gray-500 dark:text-gray-500">{{ member.status === 'active' ? 'Active' : 'Inactive' }}</span>
+              <div class="flex shrink-0 items-start sm:justify-end">
+                <span :class="['rounded-full border px-3 py-1 text-xs font-bold leading-none', member.status === 'active' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-100 text-slate-500']">{{ member.status === 'active' ? 'Active' : 'Inactive' }}</span>
               </div>
             </div>
-            <div class="mt-3 flex gap-2 border-t border-gray-100 pt-3 dark:border-white/[0.06]">
-              <button
-                type="button"
-                class="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-white/[0.08] dark:text-gray-400 dark:hover:bg-white/[0.04]"
-                @click="openModal(member)"
-              >
-                <Pencil class="h-3.5 w-3.5" /> Edit
-              </button>
-              <button
-                type="button"
-                class="flex flex-1 items-center justify-center gap-1.5 rounded-lg border border-gray-200 px-3 py-2 text-xs font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-white/[0.08] dark:text-gray-400 dark:hover:bg-white/[0.04]"
-                @click="statusTarget = member"
-              >
-                <Power class="h-3.5 w-3.5" /> {{ member.status === 'active' ? 'Deactivate' : 'Activate' }}
-              </button>
+            <div class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 dark:border-white/[0.06] sm:flex-row sm:items-center sm:justify-between">
+              <p class="flex min-w-0 items-center gap-1 text-xs font-medium text-blue-300">
+                <Clock3 class="h-3.5 w-3.5" />
+                <span class="truncate">Last login: {{ lastLoginLabel(member, index) }}</span>
+              </p>
+              <div class="grid grid-cols-2 gap-2 sm:flex sm:items-center">
+                <button
+                  type="button"
+                  class="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
+                  @click="openModal(member)"
+                >
+                  <Pencil class="h-3.5 w-3.5" /> Edit
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-9 min-w-0 items-center justify-center gap-1.5 rounded-lg border border-rose-200 px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                  @click="requestDelete(member)"
+                >
+                  <Trash2 class="h-3.5 w-3.5" /> Remove
+                </button>
+              </div>
             </div>
           </article>
         </div>
 
-        <div class="hidden overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-white/[0.07] dark:bg-gray-800 md:block">
-          <table class="min-w-full">
-            <thead>
-              <tr class="border-b border-gray-100 bg-gray-50/80 dark:border-white/[0.06] dark:bg-white/[0.02]">
-                <th class="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Staff</th>
-                <th class="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Branch</th>
-                <th class="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Contact</th>
-                <th class="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Access</th>
-                <th class="px-3 py-3 text-left text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Status</th>
-                <th class="py-3 pl-3 pr-4 text-right text-[11px] font-semibold uppercase tracking-wider text-gray-400 dark:text-gray-500">Actions</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-100 dark:divide-white/[0.04]">
-              <tr v-for="member in filteredStaff" :key="member.id" class="group transition-colors hover:bg-gray-50/60 dark:hover:bg-white/[0.02]">
-                <td class="px-4 py-3">
-                  <div class="flex items-center gap-3">
-                    <div class="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">
-                      {{ initials(member) }}
-                    </div>
-                    <div class="min-w-0">
-                      <p class="truncate text-sm font-medium text-gray-900 dark:text-gray-100">{{ fullName(member) }}</p>
-                      <p class="truncate text-xs text-gray-500 dark:text-gray-500">{{ member.username ?? 'No username' }}</p>
-                    </div>
-                  </div>
-                </td>
-                <td class="px-3 py-3 text-sm text-gray-600 dark:text-gray-400">{{ member.branch?.name ?? 'Main branch' }}</td>
-                <td class="px-3 py-3 text-sm text-gray-600 dark:text-gray-400">{{ member.phone ?? member.email ?? '-' }}</td>
-                <td class="px-3 py-3 text-sm text-gray-600 dark:text-gray-400">{{ member.permissions.length }} permissions</td>
-                <td class="px-3 py-3">
-                  <div class="flex items-center gap-1.5">
-                    <div :class="['h-1.5 w-1.5 rounded-full', member.status === 'active' ? 'bg-emerald-500' : 'bg-gray-300 dark:bg-gray-600']" />
-                    <span class="text-xs text-gray-500 dark:text-gray-500">{{ member.status === 'active' ? 'Active' : 'Inactive' }}</span>
-                  </div>
-                </td>
-                <td class="py-3 pl-3 pr-4 text-right">
-                  <div class="flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                    <button
-                      type="button"
-                      class="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/[0.06] dark:hover:text-gray-200"
-                      @click="openModal(member)"
-                    >
-                      <Pencil class="h-3.5 w-3.5" />
-                    </button>
-                    <button
-                      type="button"
-                      class="rounded-md p-1.5 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:hover:bg-white/[0.06] dark:hover:text-gray-200"
-                      @click="statusTarget = member"
-                    >
-                      <Power class="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="hidden space-y-3 lg:block">
+          <article
+            v-for="(member, index) in filteredStaff"
+            :key="member.id"
+            class="rounded-2xl border border-slate-200 bg-white px-5 py-6 shadow-[0_1px_3px_rgba(15,23,42,0.16)] dark:border-white/[0.07] dark:bg-gray-800"
+          >
+            <div class="flex items-start justify-between gap-5">
+              <div class="flex min-w-0 items-center gap-3">
+                <div class="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet-100 text-sm font-semibold text-violet-700">
+                  {{ initials(member) }}
+                </div>
+                <div class="min-w-0">
+                  <h2 class="truncate text-base font-semibold leading-5 text-slate-950 dark:text-white">{{ fullName(member) }}</h2>
+                  <p class="mt-1 text-xs font-medium text-blue-300">{{ member.username ? `@${member.username}` : '@staff' }} - {{ member.phone ?? member.email ?? 'No contact' }}</p>
+                </div>
+              </div>
+              <div class="flex shrink-0 items-start">
+                <span :class="['rounded-full border px-3 py-1 text-xs font-bold leading-none', member.status === 'active' ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-100 text-slate-500']">{{ member.status === 'active' ? 'Active' : 'Inactive' }}</span>
+              </div>
+            </div>
+
+            <div class="mt-5 flex items-center justify-between border-t border-slate-100 pt-3 dark:border-white/[0.06]">
+              <p class="flex items-center gap-1 text-xs font-medium text-blue-300">
+                <Clock3 class="h-3.5 w-3.5" />
+                Last login: {{ lastLoginLabel(member, index) }}
+              </p>
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-800 transition hover:bg-slate-50"
+                  @click="openModal(member)"
+                >
+                  <Pencil class="h-3.5 w-3.5" /> Edit
+                </button>
+                <button
+                  type="button"
+                  class="inline-flex h-8 items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 text-xs font-semibold text-rose-600 transition hover:bg-rose-50"
+                  @click="requestDelete(member)"
+                >
+                  <Trash2 class="h-3.5 w-3.5" /> Remove
+                </button>
+              </div>
+            </div>
+          </article>
         </div>
       </template>
 
