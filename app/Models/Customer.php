@@ -2,14 +2,13 @@
 
 namespace App\Models;
 
-use App\Enums\BranchStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Branch extends Model
+class Customer extends Model
 {
     use HasFactory, HasUlids;
 
@@ -17,29 +16,13 @@ class Branch extends Model
         'business_id',
         'name',
         'phone',
+        'email',
         'address',
-        'status',
-        'is_main',
     ];
 
     public function business(): BelongsTo
     {
         return $this->belongsTo(Business::class);
-    }
-
-    public function users(): HasMany
-    {
-        return $this->hasMany(User::class);
-    }
-
-    public function productStocks(): HasMany
-    {
-        return $this->hasMany(BranchProductStock::class);
-    }
-
-    public function stockMovements(): HasMany
-    {
-        return $this->hasMany(StockMovement::class);
     }
 
     public function sales(): HasMany
@@ -55,13 +38,5 @@ class Branch extends Model
     public function carts(): HasMany
     {
         return $this->hasMany(Cart::class);
-    }
-
-    protected function casts(): array
-    {
-        return [
-            'status' => BranchStatus::class,
-            'is_main' => 'boolean',
-        ];
     }
 }

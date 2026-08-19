@@ -2,24 +2,26 @@
 
 namespace App\Models;
 
-use App\Enums\BranchStatus;
+use App\Enums\ProductStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Branch extends Model
+class Product extends Model
 {
     use HasFactory, HasUlids;
 
     protected $fillable = [
         'business_id',
         'name',
-        'phone',
-        'address',
+        'sku',
+        'category',
+        'unit',
+        'cost_price',
+        'selling_price',
         'status',
-        'is_main',
     ];
 
     public function business(): BelongsTo
@@ -27,12 +29,7 @@ class Branch extends Model
         return $this->belongsTo(Business::class);
     }
 
-    public function users(): HasMany
-    {
-        return $this->hasMany(User::class);
-    }
-
-    public function productStocks(): HasMany
+    public function branchStocks(): HasMany
     {
         return $this->hasMany(BranchProductStock::class);
     }
@@ -42,26 +39,22 @@ class Branch extends Model
         return $this->hasMany(StockMovement::class);
     }
 
-    public function sales(): HasMany
+    public function saleItems(): HasMany
     {
-        return $this->hasMany(Sale::class);
+        return $this->hasMany(SaleItem::class);
     }
 
-    public function debtPayments(): HasMany
+    public function cartItems(): HasMany
     {
-        return $this->hasMany(DebtPayment::class);
-    }
-
-    public function carts(): HasMany
-    {
-        return $this->hasMany(Cart::class);
+        return $this->hasMany(CartItem::class);
     }
 
     protected function casts(): array
     {
         return [
-            'status' => BranchStatus::class,
-            'is_main' => 'boolean',
+            'cost_price' => 'decimal:2',
+            'selling_price' => 'decimal:2',
+            'status' => ProductStatus::class,
         ];
     }
 }

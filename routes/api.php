@@ -2,6 +2,11 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CustomerController;
+use App\Http\Controllers\DebtController;
+use App\Http\Controllers\ProductController;
+use App\Http\Controllers\SaleController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
 
@@ -14,6 +19,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::middleware('business.member')->group(function () {
         Route::put('/users/{userId}', [AuthController::class, 'update']);
         Route::delete('/users/{userId}', [AuthController::class, 'delete']);
+
+        Route::get('/products', [ProductController::class, 'index']);
+        Route::get('/stock-movements', [ProductController::class, 'allMovements']);
+        Route::post('/products', [ProductController::class, 'store']);
+        Route::put('/products/{productId}', [ProductController::class, 'update']);
+        Route::patch('/products/{productId}/archive', [ProductController::class, 'archive']);
+        Route::patch('/products/{productId}/stock', [ProductController::class, 'adjustStock']);
+        Route::get('/products/{productId}/movements', [ProductController::class, 'movements']);
+
+        Route::get('/customers', [CustomerController::class, 'index']);
+        Route::post('/customers', [CustomerController::class, 'store']);
+        Route::put('/customers/{customerId}', [CustomerController::class, 'update']);
+
+        Route::get('/cart', [CartController::class, 'show']);
+        Route::patch('/cart', [CartController::class, 'update']);
+        Route::delete('/cart', [CartController::class, 'clear']);
+        Route::post('/cart/items', [CartController::class, 'addItem']);
+        Route::patch('/cart/items/{cartItemId}', [CartController::class, 'updateItem']);
+        Route::delete('/cart/items/{cartItemId}', [CartController::class, 'removeItem']);
+
+        Route::post('/sales', [SaleController::class, 'store']);
+
+        Route::get('/debts', [DebtController::class, 'index']);
+        Route::post('/debts/{saleId}/payments', [DebtController::class, 'recordPayment']);
 
         Route::middleware('business.admin')->group(function () {
             Route::get('/branches', [BranchController::class, 'index']);

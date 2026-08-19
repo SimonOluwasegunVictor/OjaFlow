@@ -6,9 +6,14 @@ import RegisterView from '../views/auth/RegisterView.vue';
 import StaffLoginView from '../views/auth/StaffLoginView.vue';
 import BranchesView from '../views/dashboard/BranchesView.vue';
 import ComingSoonView from '../views/dashboard/ComingSoonView.vue';
+import CustomersView from '../views/dashboard/CustomersView.vue';
 import DashboardHomeView from '../views/dashboard/DashboardHomeView.vue';
+import DebtsView from '../views/dashboard/DebtsView.vue';
 import ProfileView from '../views/dashboard/ProfileView.vue';
+import ProductsView from '../views/dashboard/ProductsView.vue';
+import RecordSaleView from '../views/dashboard/RecordSaleView.vue';
 import StaffView from '../views/dashboard/StaffView.vue';
+import StockView from '../views/dashboard/StockView.vue';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -55,8 +60,8 @@ const router = createRouter({
                 {
                     path: 'stock',
                     name: 'stock',
-                    component: ComingSoonView,
-                    meta: { title: 'Stock', permission: ['view_stock', 'adjust_stock'] },
+                    component: StockView,
+                    meta: { title: 'Stock Movement', permission: ['view_stock', 'adjust_stock', 'manage_products'] },
                 },
                 {
                     path: 'staff',
@@ -73,25 +78,25 @@ const router = createRouter({
                 {
                     path: 'record-sale',
                     name: 'record-sale',
-                    component: ComingSoonView,
+                    component: RecordSaleView,
                     meta: { title: 'Record Sale', permission: 'record_sales' },
                 },
                 {
                     path: 'products',
                     name: 'products',
-                    component: ComingSoonView,
+                    component: ProductsView,
                     meta: { title: 'Products', permission: 'manage_products' },
                 },
                 {
                     path: 'customers',
                     name: 'customers',
-                    component: ComingSoonView,
+                    component: CustomersView,
                     meta: { title: 'Customers', permission: 'manage_customers' },
                 },
                 {
                     path: 'debts',
                     name: 'debts',
-                    component: ComingSoonView,
+                    component: DebtsView,
                     meta: { title: 'Debts', permission: 'record_debt_payments' },
                 },
                 {

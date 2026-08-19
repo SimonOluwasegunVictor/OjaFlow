@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Concerns\HasUlids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -50,6 +51,26 @@ class User extends Authenticatable
     public function ownedBusiness(): HasOne
     {
         return $this->hasOne(Business::class, 'owner_id');
+    }
+
+    public function stockMovements(): HasMany
+    {
+        return $this->hasMany(StockMovement::class);
+    }
+
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class);
+    }
+
+    public function debtPayments(): HasMany
+    {
+        return $this->hasMany(DebtPayment::class);
+    }
+
+    public function carts(): HasMany
+    {
+        return $this->hasMany(Cart::class);
     }
 
     public function isAdmin(): bool
