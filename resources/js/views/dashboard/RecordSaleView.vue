@@ -5,7 +5,14 @@ import { useCartStore } from '../../stores/cart';
 import { useCustomerStore } from '../../stores/customers';
 import { useProductStore } from '../../stores/products';
 import { useSalesStore } from '../../stores/sales';
+import SearchableSelect from '../../components/ui/SearchableSelect.vue';
 import type { Product, SalePaymentMethod } from '../../types';
+
+interface SearchableSelectOption {
+  value: string;
+  label: string;
+  description?: string | null;
+}
 
 const cartStore = useCartStore();
 const productStore = useProductStore();
@@ -53,7 +60,16 @@ const total = computed(() => cartStore.total);
 const itemCount = computed(() => cartStore.count);
 const balanceRemaining = computed(() => Math.max(0, total.value - Number(amountPaid.value || 0)));
 const selectedCustomer = computed(() => customerStore.customers.find((customer) => customer.id === selectedCustomerId.value) ?? null);
-const creditNeedsCustomer = computed(() => ['credit', 'split'].includes(paymentMethod.value) && balanceRemaining.value > 0 && !selectedCustomer.value);
+const customerOptions = computed<SearchableSelectOption[]>(() => [
+  { value: '', label: 'Walk-in Customer', description: 'No credit balance will be assigned' },
+  ...customerStore.customers.map((customer) => ({
+    value: customer.id,
+    label: customer.name,
+    description: customer.phone ?? customer.email ?? 'Customer record',
+  })),
+]);
+const customerSelectionRequired = computed(() => ['credit', 'split'].includes(paymentMethod.value) && balanceRemaining.value > 0);
+const creditNeedsCustomer = computed(() => customerSelectionRequired.value && !selectedCustomer.value);
 const needsDueDate = computed(() => balanceRemaining.value > 0);
 const canSubmitPayment = computed(() => Boolean(cartStore.cart?.id) && cartItems.value.length > 0 && !creditNeedsCustomer.value && (!needsDueDate.value || Boolean(dueDate.value)));
 const paymentMethods: Array<{ value: SalePaymentMethod; label: string }> = [
@@ -176,14 +192,13 @@ function defaultDueDate() {
           >
         </div>
 
-        <select
+        <SearchableSelect
           v-model="selectedCustomerId"
-          class="h-11 rounded-[10px] border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-950 outline-none transition focus:border-blue-300 focus:ring-4 focus:ring-blue-100 dark:border-white/[0.08] dark:bg-gray-900 dark:text-white"
+          :options="customerOptions"
+          placeholder="Walk-in Customer"
+          search-placeholder="Search customers..."
           @change="updateCartMeta"
-        >
-          <option value="">Walk-in Customer</option>
-          <option v-for="customer in customerStore.customers" :key="customer.id" :value="customer.id">{{ customer.name }}</option>
-        </select>
+        />
       </div>
 
       <p v-if="productStore.error || customerStore.error || cartStore.error || salesStore.error" class="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
@@ -240,10 +255,13 @@ function defaultDueDate() {
 
       <div class="flex min-h-0 flex-1 flex-col">
         <div class="hidden border-b border-slate-100 px-4 py-4 lg:block dark:border-white/[0.06]">
-          <select v-model="selectedCustomerId" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-950 outline-none dark:border-white/[0.08] dark:bg-gray-900 dark:text-white" @change="updateCartMeta">
-            <option value="">Walk-in Customer</option>
-            <option v-for="customer in customerStore.customers" :key="customer.id" :value="customer.id">{{ customer.name }}</option>
-          </select>
+          <SearchableSelect
+            v-model="selectedCustomerId"
+            :options="customerOptions"
+            placeholder="Walk-in Customer"
+            search-placeholder="Search customers..."
+            @change="updateCartMeta"
+          />
         </div>
 
         <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
@@ -347,6 +365,17 @@ function defaultDueDate() {
         <div v-if="creditNeedsCustomer" class="mt-4 flex items-center gap-2 rounded-lg border border-amber-300 bg-amber-50 px-3 py-3 text-sm font-semibold text-amber-700">
           <AlertTriangle class="h-4 w-4 shrink-0" />
           A customer must be selected for credit sales
+        </div>
+
+        <div v-if="customerSelectionRequired" class="mt-4">
+          <SearchableSelect
+            v-model="selectedCustomerId"
+            label="Customer"
+            :options="customerOptions"
+            placeholder="Select customer"
+            search-placeholder="Search customers by name, phone, or email..."
+            empty-text="No customers match your search"
+          />
         </div>
 
         <label class="mt-4 grid gap-2 text-sm font-bold text-slate-900 dark:text-white">

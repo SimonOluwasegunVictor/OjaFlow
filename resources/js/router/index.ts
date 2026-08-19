@@ -105,6 +105,12 @@ const router = createRouter({
                     component: ComingSoonView,
                     meta: { title: 'Sales History', permission: ['view_sales', 'view_reports'] },
                 },
+                {
+                    path: 'receipts',
+                    name: 'receipts',
+                    component: ComingSoonView,
+                    meta: { title: 'Receipts', permission: ['view_sales', 'view_reports'] },
+                },
             ],
         },
         {

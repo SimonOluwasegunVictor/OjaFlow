@@ -121,7 +121,7 @@ async function logout() {
       </div>
     </section>
 
-    <BottomNav />
+    <BottomNav @sign-out="confirmingLogout = true" />
     <ConfirmDialog
       v-model:open="confirmingLogout"
       title="Sign out?"
