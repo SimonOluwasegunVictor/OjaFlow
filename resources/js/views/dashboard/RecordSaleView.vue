@@ -533,7 +533,7 @@ function defaultDueDate() {
     </BaseModal>
 
     <section v-if="salesStore.lastSale" class="print-only bg-white p-6 text-black">
-      <h1 class="text-xl font-bold">{{ auth.user?.business?.name ?? 'OjaFlow' }}</h1>
+      <h1 class="text-xl font-bold">{{ auth.user?.business?.name ?? 'TradeNest' }}</h1>
       <p class="mt-1 text-sm">{{ salesStore.lastSale.order_number }} · {{ new Date(salesStore.lastSale.created_at).toLocaleString('en-NG') }}</p>
       <p v-if="salesStore.lastSale.customer" class="mt-3 text-sm">Customer: {{ salesStore.lastSale.customer.name }}</p>
       <div class="mt-5 border-y border-black py-3 text-sm">

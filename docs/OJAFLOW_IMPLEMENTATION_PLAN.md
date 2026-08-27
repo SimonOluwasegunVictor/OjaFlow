@@ -1,14 +1,14 @@
-# OjaFlow Implementation Plan
+# TradeNest Implementation Plan
 
 ## Product Summary
 
-OjaFlow is a Nigerian SaaS product for small businesses, wholesalers, shop owners, and retailers. It helps business owners replace paper notebooks with a simple digital system for sales, stock, receipts, customer debts, payments, staff, and daily reports.
+TradeNest is a Nigerian SaaS product for small businesses, wholesalers, shop owners, and retailers. It helps business owners replace paper notebooks with a simple digital system for sales, stock, receipts, customer debts, payments, staff, and daily reports.
 
 The product should feel like a smart business notebook, not complicated accounting software.
 
 ## Core MVP Promise
 
-OjaFlow should answer these questions every day:
+TradeNest should answer these questions every day:
 
 - What did we sell today?
 - How much money came in?
@@ -500,7 +500,7 @@ Current policy foundation:
 
 ## MVP Boundaries
 
-OjaFlow should not start as:
+TradeNest should not start as:
 
 - Full accounting software
 - Ecommerce platform

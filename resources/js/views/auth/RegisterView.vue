@@ -55,7 +55,7 @@ async function submit() {
     <form class="auth-card" @submit.prevent="submit">
       <div>
         <h2 class="text-2xl font-semibold text-gray-950 dark:text-white">Create your account</h2>
-        <p class="mt-2 text-sm font-medium text-gray-500 dark:text-gray-400">Get started with OjaFlow for free</p>
+        <p class="mt-2 text-sm font-medium text-gray-500 dark:text-gray-400">Get started with TradeNest for free</p>
       </div>
 
       <div class="mt-7 grid gap-5">
