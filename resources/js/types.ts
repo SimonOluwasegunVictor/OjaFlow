@@ -9,6 +9,9 @@ export interface Business {
     phone: string | null;
     address: string | null;
     logo: string | null;
+    receipt_footer?: string | null;
+    receipt_size?: '58mm' | '80mm' | 'a4';
+    settings?: Record<string, boolean>;
 }
 
 export interface Branch {

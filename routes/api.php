@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\BusinessController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DebtController;
@@ -18,6 +19,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
 
     Route::middleware('business.member')->group(function () {
+        Route::get('/business', [BusinessController::class, 'show']);
         Route::put('/users/{userId}', [AuthController::class, 'update']);
         Route::delete('/users/{userId}', [AuthController::class, 'delete']);
 
@@ -47,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/debts/{saleId}/payments', [DebtController::class, 'recordPayment']);
 
         Route::middleware('business.admin')->group(function () {
+            Route::put('/business', [BusinessController::class, 'update']);
             Route::get('/branches', [BranchController::class, 'index']);
             Route::post('/branches', [BranchController::class, 'store']);
             Route::get('/branches/{branchId}', [BranchController::class, 'show']);

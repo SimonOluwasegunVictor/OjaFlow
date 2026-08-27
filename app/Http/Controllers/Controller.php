@@ -39,6 +39,9 @@ abstract class Controller
                 'phone' => $user->business->phone,
                 'address' => $user->business->address,
                 'logo' => $user->business->logo,
+                'receipt_footer' => $user->business->receipt_footer,
+                'receipt_size' => $user->business->receipt_size,
+                'settings' => $user->business->settings ?? [],
             ] : null,
             'branch' => $user->branch ? [
                 'id' => $user->branch->id,

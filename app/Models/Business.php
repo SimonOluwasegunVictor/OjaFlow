@@ -19,6 +19,9 @@ class Business extends Model
         'phone',
         'address',
         'logo',
+        'receipt_footer',
+        'receipt_size',
+        'settings',
     ];
 
     public function owner(): BelongsTo
@@ -69,5 +72,12 @@ class Business extends Model
     public function carts(): HasMany
     {
         return $this->hasMany(Cart::class);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'settings' => 'array',
+        ];
     }
 }

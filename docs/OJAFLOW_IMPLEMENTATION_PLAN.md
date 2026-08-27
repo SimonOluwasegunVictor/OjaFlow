@@ -544,4 +544,6 @@ For the MVP, a JSON `permissions` column on `users` is acceptable and fast to bu
 
 Products, branch stock, stock movements, customers, carts, sales, debts, and debt payments are implemented. The dashboard now reads a branch-scoped report endpoint instead of sample values. Sale items also snapshot `cost_price` so historical profit estimates remain stable when product prices change.
 
-The next strong backend step is completing Phase 5 report history and Phase 6 business and receipt settings.
+Phase 5 dashboard reporting and the first Phase 6 business and receipt settings are now implemented. The mobile experience also has a branded in-app splash while the NativePHP platform launch configuration remains deployment-specific.
+
+The next strong backend step is receipt rendering/history and the remaining notification settings.
