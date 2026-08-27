@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\BranchStatus;
 use App\Enums\ProductStatus;
 use App\Enums\StaffPermission;
 use App\Enums\StockMovementType;
@@ -171,7 +172,7 @@ class ProductController extends Controller
 
         $payload = $request->validate([
             'branch_id' => ['nullable', Rule::exists('branches', 'id')->where('business_id', $request->user()->business_id)],
-            'quantity' => ['required', 'integer'],
+            'quantity' => ['required', 'integer', 'min:0'],
             'type' => ['required', Rule::in([
                 StockMovementType::PURCHASE->value,
                 StockMovementType::RETURN->value,
@@ -185,9 +186,9 @@ class ProductController extends Controller
 
         $branch = $this->targetBranch($request, $payload['branch_id'] ?? null);
         $movementType = StockMovementType::from($payload['type']);
-        $quantity = abs((int) $payload['quantity']);
+        $quantity = (int) $payload['quantity'];
 
-        if ($quantity < 1) {
+        if ($movementType !== StockMovementType::CORRECTION && $quantity < 1) {
             return $this->response('Quantity must be at least 1', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
 
@@ -209,8 +210,13 @@ class ProductController extends Controller
             }
 
             $previous = $stock->quantity;
+
+            if ($movementType === StockMovementType::DAMAGE && $quantity > $previous) {
+                abort(JsonResponse::HTTP_UNPROCESSABLE_ENTITY, 'Damage quantity cannot exceed available stock');
+            }
+
             $newQuantity = match ($movementType) {
-                StockMovementType::DAMAGE => max(0, $previous - $quantity),
+                StockMovementType::DAMAGE => $previous - $quantity,
                 StockMovementType::CORRECTION => $quantity,
                 default => $previous + $quantity,
             };
@@ -283,15 +289,29 @@ class ProductController extends Controller
 
     private function targetBranch(Request $request, ?string $branchId = null): Branch
     {
+        $query = Branch::query()
+            ->where('business_id', $request->user()->business_id)
+            ->where('status', BranchStatus::ACTIVE);
+
+        if (!$request->user()->isAdmin()) {
+            return $query->where('id', $request->user()->branch_id)->firstOrFail();
+        }
+
+        if ($branchId) {
+            return $query->where('id', $branchId)->firstOrFail();
+        }
+
+        $assignedBranch = $query->where('id', $request->user()->branch_id)->first();
+
+        if ($assignedBranch) {
+            return $assignedBranch;
+        }
+
         return Branch::query()
             ->where('business_id', $request->user()->business_id)
-            ->when($branchId, fn ($query) => $query->where('id', $branchId))
-            ->when(!$branchId, fn ($query) => $query->where('id', $request->user()->branch_id))
-            ->first()
-            ?? Branch::query()
-                ->where('business_id', $request->user()->business_id)
-                ->where('is_main', true)
-                ->firstOrFail();
+            ->where('status', BranchStatus::ACTIVE)
+            ->where('is_main', true)
+            ->firstOrFail();
     }
 
     private function findProduct(Request $request, string $productId): ?Product

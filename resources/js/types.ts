@@ -1,5 +1,6 @@
 export type UserRole = 'admin' | 'staff';
 export type UserStatus = 'active' | 'inactive';
+export type BranchStatus = 'active' | 'inactive';
 
 export interface Business {
     id: string;
@@ -15,7 +16,7 @@ export interface Branch {
     name: string;
     phone: string | null;
     address: string | null;
-    status: UserStatus;
+    status: BranchStatus;
     is_main: boolean;
     created_at: string;
     updated_at: string;
