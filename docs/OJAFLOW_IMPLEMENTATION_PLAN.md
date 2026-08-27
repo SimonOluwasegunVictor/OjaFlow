@@ -546,6 +546,6 @@ Products, branch stock, stock movements, customers, carts, sales, debts, and deb
 
 Business admins can configure active bank accounts and POS terminals, while payment selection and customer assignment happen in the checkout modal. Checkout confirmation, completion, receipt printing, and starting a new sale are supported in the mobile UI.
 
-Phase 5 dashboard reporting and the first Phase 6 business and receipt settings are now implemented. The mobile experience also has a branded in-app splash while the NativePHP platform launch configuration remains deployment-specific.
+Phase 5 dashboard reporting, sales history, end-of-day reconciliation, and the first Phase 6 business and receipt settings are now implemented. The mobile experience also has a branded in-app splash while the NativePHP platform launch configuration remains deployment-specific.
 
 The next strong backend step is receipt rendering/history and the remaining notification settings.

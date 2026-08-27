@@ -9,12 +9,54 @@ use App\Models\Branch;
 use App\Models\BranchProductStock;
 use App\Models\DebtPayment;
 use App\Models\Sale;
+use App\Models\SalePayment;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ReportController extends Controller
 {
+    public function endOfDay(Request $request): JsonResponse
+    {
+        if (!$request->user()->hasPermission(StaffPermission::VIEW_REPORTS->value)
+            && !$request->user()->hasPermission(StaffPermission::VIEW_SALES->value)) {
+            return $this->response('You are not allowed to view end-of-day reports', JsonResponse::HTTP_FORBIDDEN);
+        }
+
+        $date = $request->validate(['date' => ['nullable', 'date']])['date'] ?? now()->toDateString();
+        $branch = $this->targetBranch($request);
+        $sales = Sale::query()->where('business_id', $request->user()->business_id)->where('branch_id', $branch->id)->whereDate('created_at', $date);
+        $salePayments = SalePayment::query()->with('account')->where('business_id', $request->user()->business_id)->where('branch_id', $branch->id)->whereDate('created_at', $date)->get();
+        $debtPayments = DebtPayment::query()->where('business_id', $request->user()->business_id)->where('branch_id', $branch->id)->whereDate('created_at', $date);
+
+        $paymentBreakdown = $salePayments->groupBy(fn (SalePayment $payment) => $payment->method->value)->map(fn ($payments, $method) => [
+            'method' => $method,
+            'label' => ucfirst($method),
+            'amount' => number_format((float) $payments->sum('amount'), 2, '.', ''),
+            'payments' => $payments->map(fn (SalePayment $payment) => [
+                'amount' => $payment->amount,
+                'account' => $payment->account?->name,
+                'destination' => $payment->account?->account_number ?? $payment->account?->terminal_id,
+            ])->values(),
+        ])->values();
+
+        $debtReceived = (float) (clone $debtPayments)->sum('amount');
+
+        return response()->json([
+            'date' => $date,
+            'branch' => ['id' => $branch->id, 'name' => $branch->name],
+            'summary' => [
+                'transactions' => (clone $sales)->count(),
+                'sales_total' => number_format((float) (clone $sales)->sum('total'), 2, '.', ''),
+                'sale_payments' => number_format((float) $salePayments->sum('amount'), 2, '.', ''),
+                'debt_payments' => number_format($debtReceived, 2, '.', ''),
+                'money_received' => number_format((float) $salePayments->sum('amount') + $debtReceived, 2, '.', ''),
+                'outstanding' => number_format((float) (clone $sales)->sum('balance_due'), 2, '.', ''),
+            ],
+            'payment_breakdown' => $paymentBreakdown,
+        ]);
+    }
+
     public function dashboard(Request $request): JsonResponse
     {
         if (!$request->user()->hasPermission(StaffPermission::VIEW_DASHBOARD->value)

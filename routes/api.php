@@ -46,6 +46,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/cart/items/{cartItemId}', [CartController::class, 'removeItem']);
 
         Route::post('/sales', [SaleController::class, 'store']);
+        Route::get('/sales', [SaleController::class, 'index']);
+        Route::get('/end-of-day', [ReportController::class, 'endOfDay']);
 
         Route::get('/debts', [DebtController::class, 'index']);
         Route::post('/debts/{saleId}/payments', [DebtController::class, 'recordPayment']);

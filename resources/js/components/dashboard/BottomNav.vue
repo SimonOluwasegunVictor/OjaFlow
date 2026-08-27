@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue';
-import { Boxes, Clock3, FileText, Home, LogOut, MoreHorizontal, Package, Settings, ShoppingCart, UserRound, Users, X } from 'lucide-vue-next';
+import { Boxes, ClipboardCheck, Clock3, FileText, Home, LogOut, MoreHorizontal, Package, Settings, ShoppingCart, UserRound, Users, X } from 'lucide-vue-next';
 import { RouterLink, useRoute } from 'vue-router';
 import { useAuthStore } from '../../stores/auth';
 
@@ -23,6 +23,7 @@ const primaryLinks = computed(() => [
 const moreLinks = computed(() => [
   { name: 'customers', label: 'Customers', description: 'Manage your customer list', icon: Users, show: auth.canUse('manage_customers') },
   { name: 'sales-history', label: 'Sales History', description: 'View all past sales', icon: Clock3, show: auth.canUse(['view_sales', 'view_reports']) },
+  { name: 'end-of-day', label: 'End of Day', description: 'Reconcile today\'s payments', icon: ClipboardCheck, show: auth.canUse(['view_sales', 'view_reports']) },
   { name: 'receipts', label: 'Receipt', description: 'View & share receipts', icon: FileText, show: auth.canUse(['view_sales', 'view_reports']) },
   { name: 'staff', label: 'Staff', description: 'Manage your team', icon: UserRound, show: auth.isAdmin },
   { name: 'profile', label: 'Settings', description: 'App & business settings', icon: Settings, show: true },

@@ -9,11 +9,13 @@ import ComingSoonView from '../views/dashboard/ComingSoonView.vue';
 import CustomersView from '../views/dashboard/CustomersView.vue';
 import DashboardHomeView from '../views/dashboard/DashboardHomeView.vue';
 import DebtsView from '../views/dashboard/DebtsView.vue';
+import EndOfDayView from '../views/dashboard/EndOfDayView.vue';
 import ProfileView from '../views/dashboard/ProfileView.vue';
 import ProductsView from '../views/dashboard/ProductsView.vue';
 import RecordSaleView from '../views/dashboard/RecordSaleView.vue';
 import StaffView from '../views/dashboard/StaffView.vue';
 import StockView from '../views/dashboard/StockView.vue';
+import SalesHistoryView from '../views/dashboard/SalesHistoryView.vue';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -102,8 +104,14 @@ const router = createRouter({
                 {
                     path: 'sales-history',
                     name: 'sales-history',
-                    component: ComingSoonView,
+                    component: SalesHistoryView,
                     meta: { title: 'Sales History', permission: ['view_sales', 'view_reports'] },
+                },
+                {
+                    path: 'end-of-day',
+                    name: 'end-of-day',
+                    component: EndOfDayView,
+                    meta: { title: 'End of Day', permission: ['view_sales', 'view_reports'] },
                 },
                 {
                     path: 'receipts',

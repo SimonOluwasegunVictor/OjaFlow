@@ -21,6 +21,47 @@ use Illuminate\Validation\Rule;
 
 class SaleController extends Controller
 {
+    public function index(Request $request): JsonResponse
+    {
+        if (!$request->user()->hasPermission(StaffPermission::VIEW_SALES->value)
+            && !$request->user()->hasPermission(StaffPermission::VIEW_REPORTS->value)) {
+            return $this->permissionDenied();
+        }
+
+        $payload = $request->validate([
+            'date' => ['nullable', 'date'],
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+            'branch_id' => ['nullable', Rule::exists('branches', 'id')->where('business_id', $request->user()->business_id)],
+            'search' => ['nullable', 'string', 'max:100'],
+            'payment_status' => ['nullable', Rule::enum(SalePaymentStatus::class)],
+        ]);
+
+        $branch = $this->targetBranch($request, $request->user()->isAdmin() ? ($payload['branch_id'] ?? null) : null);
+        $sales = Sale::query()
+            ->with(['customer', 'user', 'payments.account', 'items'])
+            ->where('business_id', $request->user()->business_id)
+            ->where('branch_id', $branch->id)
+            ->when($payload['date'] ?? null, fn ($query, string $date) => $query->whereDate('created_at', $date))
+            ->when($payload['from'] ?? null, fn ($query, string $from) => $query->whereDate('created_at', '>=', $from))
+            ->when($payload['to'] ?? null, fn ($query, string $to) => $query->whereDate('created_at', '<=', $to))
+            ->when($payload['search'] ?? null, function ($query, string $search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('order_number', 'like', "%{$search}%")
+                        ->orWhereHas('customer', fn ($customer) => $customer->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->when($payload['payment_status'] ?? null, fn ($query, string $status) => $query->where('payment_status', $status))
+            ->latest()
+            ->limit(100)
+            ->get();
+
+        return response()->json([
+            'branch' => ['id' => $branch->id, 'name' => $branch->name],
+            'sales' => $sales->map(fn (Sale $sale) => $this->saleData($sale)),
+        ]);
+    }
+
     public function store(Request $request): JsonResponse
     {
         if (!$request->user()->hasPermission(StaffPermission::RECORD_SALES->value)) {
@@ -233,16 +274,22 @@ class SaleController extends Controller
         return $paid > 0 ? SalePaymentStatus::PARTIAL : SalePaymentStatus::OUTSTANDING;
     }
 
-    private function targetBranch(Request $request): Branch
+    private function targetBranch(Request $request, ?string $branchId = null): Branch
     {
-        return Branch::query()
+        $query = Branch::query()
             ->where('business_id', $request->user()->business_id)
-            ->where('id', $request->user()->branch_id)
-            ->first()
-            ?? Branch::query()
-                ->where('business_id', $request->user()->business_id)
-                ->where('is_main', true)
-                ->firstOrFail();
+            ->where('status', 'active');
+
+        if (!$request->user()->isAdmin()) {
+            return $query->where('id', $request->user()->branch_id)->firstOrFail();
+        }
+
+        if ($branchId) {
+            return $query->where('id', $branchId)->firstOrFail();
+        }
+
+        return $query->where('id', $request->user()->branch_id)->first()
+            ?? Branch::query()->where('business_id', $request->user()->business_id)->where('status', 'active')->where('is_main', true)->firstOrFail();
     }
 
     private function nextOrderNumber(Request $request): string

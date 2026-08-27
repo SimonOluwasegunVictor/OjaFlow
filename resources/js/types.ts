@@ -268,6 +268,30 @@ export interface SaleResponse {
     sale: Sale;
 }
 
+export interface SalesResponse {
+    branch: Pick<Branch, 'id' | 'name'>;
+    sales: Sale[];
+}
+
+export interface EndOfDayResponse {
+    date: string;
+    branch: Pick<Branch, 'id' | 'name'>;
+    summary: {
+        transactions: number;
+        sales_total: string;
+        sale_payments: string;
+        debt_payments: string;
+        money_received: string;
+        outstanding: string;
+    };
+    payment_breakdown: Array<{
+        method: SalePaymentMethod;
+        label: string;
+        amount: string;
+        payments: Array<{ amount: string; account: string | null; destination: string | null }>;
+    }>;
+}
+
 export interface Debt {
     id: string;
     order_number: string;

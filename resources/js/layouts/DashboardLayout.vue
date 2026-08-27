@@ -6,6 +6,7 @@ import {
   Boxes,
   CreditCard,
   History,
+  ClipboardCheck,
   Home,
   LogOut,
   Package,
@@ -39,6 +40,7 @@ const links = computed(() => [
   { name: 'customers', label: 'Customers', icon: Users, show: auth.canUse('manage_customers') },
   { name: 'debts', label: 'Debts', icon: CreditCard, show: auth.canUse('record_debt_payments') },
   { name: 'sales-history', label: 'Sales History', icon: History, show: auth.canUse(['view_sales', 'view_reports']) },
+  { name: 'end-of-day', label: 'End of Day', icon: ClipboardCheck, show: auth.canUse(['view_sales', 'view_reports']) },
   { name: 'staff', label: 'Staff', icon: Users, show: auth.isAdmin },
   { name: 'profile', label: 'Settings', icon: Settings, show: true },
 ].filter((link) => link.show));
