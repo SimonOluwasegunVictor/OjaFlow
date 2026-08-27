@@ -8,7 +8,6 @@ import { useProductStore } from '../../stores/products';
 import { useSalesStore } from '../../stores/sales';
 import { usePaymentAccountStore } from '../../stores/paymentAccounts';
 import SearchableSelect from '../../components/ui/SearchableSelect.vue';
-import ConfirmDialog from '../../components/ui/ConfirmDialog.vue';
 import BaseModal from '../../components/ui/BaseModal.vue';
 import type { Product, SalePaymentMethod, SalePayload } from '../../types';
 
@@ -29,7 +28,6 @@ const selectedCustomerId = ref('');
 const discount = ref(0);
 const checkoutOpen = ref(false);
 const paymentOpen = ref(false);
-const confirmOpen = ref(false);
 const successOpen = ref(false);
 const paymentMethod = ref<SalePaymentMethod>('cash');
 const amountPaid = ref(0);
@@ -121,11 +119,12 @@ function syncCartFields() {
 }
 
 async function updateCartMeta() {
-  await cartStore.updateCart({
+  const success = await cartStore.updateCart({
     customer_id: selectedCustomerId.value || null,
     discount: Number(discount.value || 0),
   });
   syncCartFields();
+  return success;
 }
 
 async function addProduct(product: Product) {
@@ -151,7 +150,11 @@ async function openPayment() {
     return;
   }
 
-  await updateCartMeta();
+  const cartUpdated = await updateCartMeta();
+
+  if (!cartUpdated) {
+    return;
+  }
   amountPaid.value = total.value;
   paymentMethod.value = 'cash';
   paymentLines.value = [];
@@ -165,7 +168,11 @@ async function submitSale() {
     return;
   }
 
-  await updateCartMeta();
+  const cartUpdated = await updateCartMeta();
+
+  if (!cartUpdated) {
+    return;
+  }
 
   if (!cartStore.cart?.id) {
     return;
@@ -192,7 +199,6 @@ async function submitSale() {
   amountPaid.value = 0;
   checkoutOpen.value = false;
   paymentOpen.value = false;
-  confirmOpen.value = false;
   successOpen.value = true;
   await Promise.all([
     productStore.fetchProducts({ status: 'active' }).catch(() => undefined),
@@ -226,10 +232,6 @@ function addPaymentLine() {
 function removePaymentLine(index: number) {
   if (paymentLines.value.length <= 2) return;
   paymentLines.value.splice(index, 1);
-}
-
-function askForCheckoutConfirmation() {
-  if (canSubmitPayment.value) confirmOpen.value = true;
 }
 
 function startNewSale() {
@@ -269,8 +271,8 @@ function defaultDueDate() {
 
       </div>
 
-      <p v-if="productStore.error || customerStore.error || cartStore.error || salesStore.error" class="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
-        {{ productStore.error || customerStore.error || cartStore.error || salesStore.error }}
+      <p v-if="productStore.error || customerStore.error || cartStore.error" class="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+        {{ productStore.error || customerStore.error || cartStore.error }}
       </p>
 
       <div v-if="filteredProducts.length" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -382,13 +384,17 @@ function defaultDueDate() {
     </aside>
 
     <div v-if="paymentOpen" class="fixed inset-0 z-50 grid place-items-end bg-black/45 px-0 sm:place-items-center sm:p-4">
-      <form class="max-h-[92dvh] w-full overflow-y-auto rounded-t-[20px] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.28)] dark:bg-gray-900 sm:max-w-md sm:rounded-[20px]" @submit.prevent="askForCheckoutConfirmation">
+      <form class="max-h-[92dvh] w-full overflow-y-auto rounded-t-[20px] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.28)] dark:bg-gray-900 sm:max-w-md sm:rounded-[20px]" @submit.prevent="submitSale">
         <div class="mb-5 flex items-center justify-between gap-3">
           <h2 class="text-lg font-bold text-slate-950 dark:text-white">Complete Payment</h2>
           <button type="button" class="grid h-9 w-9 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/[0.06]" aria-label="Close payment" @click="paymentOpen = false">
             <X class="h-5 w-5" />
           </button>
         </div>
+
+        <p v-if="salesStore.error" class="mb-4 rounded-lg bg-rose-50 px-3 py-3 text-sm font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
+          {{ salesStore.error }}
+        </p>
 
         <div class="rounded-[14px] bg-slate-50 p-4 dark:bg-white/[0.04]">
           <div class="flex items-center justify-between text-sm">
@@ -497,15 +503,6 @@ function defaultDueDate() {
         </button>
       </form>
     </div>
-
-    <ConfirmDialog
-      v-model:open="confirmOpen"
-      title="Confirm checkout"
-      :description="`Record this sale for ${money(total)}? This will reduce stock and save the payment details.`"
-      confirm-label="Confirm sale"
-      :loading="salesStore.loading"
-      @confirm="submitSale"
-    />
 
     <BaseModal :show="successOpen" title="Sale completed" @close="startNewSale">
       <div class="grid justify-items-center gap-3 text-center">
