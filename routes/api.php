@@ -6,6 +6,7 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\DebtController;
 use App\Http\Controllers\ProductController;
+use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SaleController;
 use App\Http\Controllers\StaffController;
 use Illuminate\Support\Facades\Route;
@@ -22,6 +23,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
         Route::get('/products', [ProductController::class, 'index']);
         Route::get('/stock-movements', [ProductController::class, 'allMovements']);
+        Route::get('/dashboard-report', [ReportController::class, 'dashboard']);
         Route::post('/products', [ProductController::class, 'store']);
         Route::put('/products/{productId}', [ProductController::class, 'update']);
         Route::patch('/products/{productId}/archive', [ProductController::class, 'archive']);

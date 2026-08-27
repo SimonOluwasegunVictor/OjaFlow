@@ -114,6 +114,28 @@ export interface StockMovementsResponse {
     movements: StockMovement[];
 }
 
+export interface DashboardReport {
+    branch: Pick<Branch, 'id' | 'name'>;
+    metrics: {
+        sales_today: string;
+        money_received: string;
+        customers_owing: string;
+        estimated_profit: string;
+        transactions_today: number;
+        low_stock_products: number;
+    };
+    sales_chart: Array<{ label: string; date: string; value: number }>;
+    payment_breakdown: Array<{ label: string; method: SalePaymentMethod; value: number }>;
+    recent_sales: Array<{
+        order_number: string;
+        customer_name: string;
+        total: string;
+        payment_status: SalePaymentStatus;
+        created_at: string;
+    }>;
+    low_stock: Array<{ id: string; name: string; quantity: number; reorder_level: number; unit: string }>;
+}
+
 export interface Customer {
     id: string;
     business_id: string;

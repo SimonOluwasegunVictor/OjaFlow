@@ -79,6 +79,7 @@ class SaleController extends Controller
                     'unit' => $item->unit,
                     'quantity' => $item->quantity,
                     'unit_price' => $item->unit_price,
+                    'cost_price' => $item->product->cost_price,
                     'line_total' => $item->line_total,
                 ];
             });
@@ -125,6 +126,7 @@ class SaleController extends Controller
                     'unit' => $item['unit'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
+                    'cost_price' => $item['cost_price'],
                     'line_total' => $item['line_total'],
                 ]);
 

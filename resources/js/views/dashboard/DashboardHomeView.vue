@@ -1,34 +1,32 @@
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, onMounted } from 'vue';
 import { AlertTriangle, Banknote, Boxes, CreditCard, Package, PackageX, Plus, ReceiptText, Settings, ShoppingCart, TrendingUp, UserPlus, Users, WalletCards } from 'lucide-vue-next';
 import { useAuthStore } from '../../stores/auth';
 import MetricCard from '../../components/dashboard/MetricCard.vue';
 import SalesChart from '../../components/dashboard/SalesChart.vue';
 import PaymentBreakdown from '../../components/dashboard/PaymentBreakdown.vue';
+import { useReportStore } from '../../stores/reports';
 
 const auth = useAuthStore();
+const reportStore = useReportStore();
 
-const metrics = [
-  { label: "Today's Sales", value: 'NGN 633,500', meta: '+12.4%', tone: 'blue', icon: TrendingUp },
-  { label: 'Money Received', value: 'NGN 585,500', meta: '+8.2%', tone: 'green', icon: WalletCards },
-  { label: 'Customers Owing You', value: 'NGN 343,000', meta: '4 customers', tone: 'orange', icon: CreditCard },
-  { label: 'Est. Profit Today', value: 'NGN 94,200', meta: '+NGN 12,000', tone: 'purple', icon: Banknote },
-  { label: 'Total Transactions', value: '18', meta: 'Today', tone: 'cyan', icon: ReceiptText },
-  { label: 'Low Stock Products', value: '3', meta: 'Need reorder', tone: 'red', icon: AlertTriangle },
-] as const;
+onMounted(() => reportStore.fetchDashboard());
 
-const sales = [
-  { name: 'Ade Okafor', order: 'ORD-001 - 10:45 AM', amount: 'NGN 45,000', status: 'Paid' },
-  { name: 'Bimpe Adeyemi', order: 'ORD-002 - 09:30 AM', amount: 'NGN 128,000', status: 'Partial' },
-  { name: 'Walk-in Customer', order: 'ORD-003 - 08:55 AM', amount: 'NGN 15,500', status: 'Paid' },
-  { name: 'Emeka Nwosu', order: 'ORD-004 - Yesterday', amount: 'NGN 220,000', status: 'Unpaid' },
-];
+const money = (value: string) => `NGN ${Number(value).toLocaleString('en-NG', { minimumFractionDigits: 2 })}`;
+const metrics = computed(() => {
+  const value = reportStore.dashboard?.metrics;
+  return [
+    { label: "Today's Sales", value: money(value?.sales_today ?? '0'), meta: 'Today', tone: 'blue', icon: TrendingUp },
+    { label: 'Money Received', value: money(value?.money_received ?? '0'), meta: 'Today', tone: 'green', icon: WalletCards },
+    { label: 'Customers Owing You', value: money(value?.customers_owing ?? '0'), meta: 'Outstanding', tone: 'orange', icon: CreditCard },
+    { label: 'Est. Profit Today', value: money(value?.estimated_profit ?? '0'), meta: 'Estimated', tone: 'purple', icon: Banknote },
+    { label: 'Total Transactions', value: String(value?.transactions_today ?? 0), meta: 'Today', tone: 'cyan', icon: ReceiptText },
+    { label: 'Low Stock Products', value: String(value?.low_stock_products ?? 0), meta: 'Need reorder', tone: 'red', icon: AlertTriangle },
+  ] as const;
+});
 
-const lowStock = [
-  { name: 'Dangote Cement (50kg)', detail: '3 Bags left - Reorder at 20' },
-  { name: 'Iron Rod 12mm', detail: '5 Bundles left - Reorder at 15' },
-  { name: 'POP Plaster White', detail: '2 Bags left - Reorder at 10' },
-];
+const sales = computed(() => reportStore.dashboard?.recent_sales ?? []);
+const lowStock = computed(() => reportStore.dashboard?.low_stock ?? []);
 
 const quickActions = computed(() => [
   { label: 'Record Sale', route: 'record-sale', icon: ShoppingCart, permission: 'record_sales', primary: true },
@@ -69,6 +67,7 @@ const permissionCards = computed(() => [
     <section v-if="auth.canUse(['view_dashboard', 'view_reports'])" class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
       <MetricCard v-for="metric in metrics" :key="metric.label" v-bind="metric" />
     </section>
+    <p v-if="reportStore.error" class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm font-semibold text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">{{ reportStore.error }}</p>
 
     <section>
       <h2 class="section-title mb-3">Quick Actions</h2>
@@ -100,8 +99,8 @@ const permissionCards = computed(() => [
     </section>
 
     <section v-if="auth.canUse('view_reports')" class="grid gap-4 xl:grid-cols-[1fr_0.95fr]">
-      <SalesChart />
-      <PaymentBreakdown />
+      <SalesChart :days="reportStore.dashboard?.sales_chart ?? []" />
+      <PaymentBreakdown :items="reportStore.dashboard?.payment_breakdown ?? []" />
     </section>
 
     <section v-if="auth.canUse('view_sales')" class="dashboard-card">
@@ -110,23 +109,23 @@ const permissionCards = computed(() => [
         <RouterLink :to="{ name: 'sales-history' }" class="text-sm font-semibold text-primary dark:text-blue-300">View all</RouterLink>
       </div>
       <div class="mt-5 divide-y divide-gray-100 dark:divide-white/[0.06]">
-        <div v-for="sale in sales" :key="sale.order" class="flex items-center gap-3 py-4">
-          <div class="grid h-9 w-9 place-items-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">{{ sale.name.slice(0, 1) }}</div>
+        <div v-for="sale in sales" :key="sale.order_number" class="flex items-center gap-3 py-4">
+          <div class="grid h-9 w-9 place-items-center rounded-full bg-gray-100 text-xs font-semibold text-gray-500 dark:bg-white/[0.06] dark:text-gray-400">{{ sale.customer_name.slice(0, 1) }}</div>
           <div class="min-w-0 flex-1">
-            <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ sale.name }}</p>
-            <p class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ sale.order }}</p>
+            <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ sale.customer_name }}</p>
+            <p class="text-xs font-medium text-gray-400 dark:text-gray-500">{{ sale.order_number }}</p>
           </div>
           <div class="text-right">
-            <p class="text-sm font-semibold">{{ sale.amount }}</p>
+            <p class="text-sm font-semibold">{{ money(sale.total) }}</p>
             <span
               class="mt-1 inline-flex rounded-full px-2 py-1 text-xs font-bold"
               :class="{
-                'border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300': sale.status === 'Paid',
-                'border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300': sale.status === 'Partial',
-                'border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300': sale.status === 'Unpaid',
+                'border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-300': sale.payment_status === 'paid',
+                'border border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-300': sale.payment_status === 'partial',
+                'border border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300': sale.payment_status === 'outstanding',
               }"
             >
-              {{ sale.status }}
+              {{ sale.payment_status === 'paid' ? 'Paid' : sale.payment_status === 'partial' ? 'Partial' : 'Unpaid' }}
             </span>
           </div>
         </div>
@@ -139,10 +138,10 @@ const permissionCards = computed(() => [
         Low Stock Alert
       </h2>
       <div class="mt-4 grid gap-2">
-        <div v-for="item in lowStock" :key="item.name" class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-card dark:border-white/[0.07] dark:bg-gray-800">
+        <div v-for="item in lowStock" :key="item.id" class="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-card dark:border-white/[0.07] dark:bg-gray-800">
           <div class="min-w-0">
             <p class="truncate text-sm font-semibold text-gray-950 dark:text-white">{{ item.name }}</p>
-            <p class="mt-1 text-xs font-medium text-gray-400 dark:text-gray-500">{{ item.detail }}</p>
+            <p class="mt-1 text-xs font-medium text-gray-400 dark:text-gray-500">{{ item.quantity }} {{ item.unit }} left · Reorder at {{ item.reorder_level }}</p>
           </div>
           <RouterLink v-if="auth.canUse('adjust_stock')" :to="{ name: auth.isAdmin ? 'branches' : 'stock' }" class="shrink-0 text-sm font-semibold text-primary dark:text-blue-300">Add Stock</RouterLink>
         </div>

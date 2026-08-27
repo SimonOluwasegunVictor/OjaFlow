@@ -1,24 +1,36 @@
 <script setup lang="ts">
-const items = [
-  { label: 'Cash', value: '52%', color: 'bg-primary' },
-  { label: 'Transfer', value: '28%', color: 'bg-violet-600' },
-  { label: 'POS', value: '14%', color: 'bg-emerald-600' },
-  { label: 'Credit', value: '6%', color: 'bg-amber-600' },
-];
+import { computed } from 'vue';
+
+const props = defineProps<{ items: Array<{ label: string; value: number }> }>();
+const total = computed(() => props.items.reduce((sum, item) => sum + item.value, 0));
+const colors = ['bg-primary', 'bg-violet-600', 'bg-emerald-600', 'bg-amber-600', 'bg-rose-600'];
+const chartColors = ['#2563eb', '#7c3aed', '#059669', '#d97706', '#e11d48'];
+const percentages = computed(() => props.items.map((item) => Math.round((item.value / (total.value || 1)) * 100)));
+const chartGradient = computed(() => {
+  let start = 0;
+  const stops = props.items.map((item, index) => {
+    const end = start + ((item.value / (total.value || 1)) * 100);
+    const stop = `${chartColors[index]} ${start}% ${end}%`;
+    start = end;
+    return stop;
+  });
+
+  return `conic-gradient(${stops.join(',') || '#e5e7eb 0% 100%'})`;
+});
 </script>
 
 <template>
   <section class="dashboard-card">
     <h2 class="section-title">Payment Breakdown</h2>
     <div class="mt-6 flex items-center gap-7">
-      <div class="h-32 w-32 shrink-0 rounded-full bg-[conic-gradient(#2563eb_0_52%,#7c3aed_52%_80%,#059669_80%_94%,#d97706_94%_100%)] p-5">
+      <div class="h-32 w-32 shrink-0 rounded-full p-5" :style="{ background: chartGradient }">
         <div class="h-full w-full rounded-full bg-white dark:bg-gray-800" />
       </div>
       <div class="grid gap-3 text-sm">
-        <div v-for="item in items" :key="item.label" class="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-          <span class="h-3 w-3 rounded-full" :class="item.color" />
+        <div v-for="(item, index) in props.items" :key="item.label" class="grid grid-cols-[auto_1fr_auto] items-center gap-3">
+          <span class="h-3 w-3 rounded-full" :class="colors[index]" />
           <span class="font-medium text-gray-600 dark:text-gray-400">{{ item.label }}</span>
-          <strong class="font-semibold text-gray-950 dark:text-white">{{ item.value }}</strong>
+          <strong class="font-semibold text-gray-950 dark:text-white">{{ percentages[index] }}%</strong>
         </div>
       </div>
     </div>

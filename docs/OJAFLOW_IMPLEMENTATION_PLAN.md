@@ -542,4 +542,6 @@ Staff management has been moved out of `AuthController` into `StaffController`, 
 
 For the MVP, a JSON `permissions` column on `users` is acceptable and fast to build. Later, if permissions become complex, move to normalized permission tables.
 
-The next strong backend step is Phase 2: products and stock.
+Products, branch stock, stock movements, customers, carts, sales, debts, and debt payments are implemented. The dashboard now reads a branch-scoped report endpoint instead of sample values. Sale items also snapshot `cost_price` so historical profit estimates remain stable when product prices change.
+
+The next strong backend step is completing Phase 5 report history and Phase 6 business and receipt settings.
