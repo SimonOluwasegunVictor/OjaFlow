@@ -542,7 +542,9 @@ Staff management has been moved out of `AuthController` into `StaffController`, 
 
 For the MVP, a JSON `permissions` column on `users` is acceptable and fast to build. Later, if permissions become complex, move to normalized permission tables.
 
-Products, branch stock, stock movements, customers, carts, sales, debts, and debt payments are implemented. The dashboard now reads a branch-scoped report endpoint instead of sample values. Sale items also snapshot `cost_price` so historical profit estimates remain stable when product prices change.
+Products, branch stock, stock movements, customers, carts, sales, debts, and debt payments are implemented. Checkout now persists one or more `sale_payments` per sale, including the bank account or POS terminal used. The dashboard reads a branch-scoped report endpoint instead of sample values. Sale items also snapshot `cost_price` so historical profit estimates remain stable when product prices change.
+
+Business admins can configure active bank accounts and POS terminals, while payment selection and customer assignment happen in the checkout modal. Checkout confirmation, completion, receipt printing, and starting a new sale are supported in the mobile UI.
 
 Phase 5 dashboard reporting and the first Phase 6 business and receipt settings are now implemented. The mobile experience also has a branded in-app splash while the NativePHP platform launch configuration remains deployment-specific.
 

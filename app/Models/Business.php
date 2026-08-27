@@ -69,6 +69,11 @@ class Business extends Model
         return $this->hasMany(DebtPayment::class);
     }
 
+    public function paymentAccounts(): HasMany
+    {
+        return $this->hasMany(PaymentAccount::class);
+    }
+
     public function carts(): HasMany
     {
         return $this->hasMany(Cart::class);

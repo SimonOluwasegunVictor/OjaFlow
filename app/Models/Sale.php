@@ -67,6 +67,11 @@ class Sale extends Model
         return $this->hasMany(DebtPayment::class);
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(SalePayment::class);
+    }
+
     protected function casts(): array
     {
         return [

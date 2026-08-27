@@ -10,7 +10,9 @@ use App\Models\Branch;
 use App\Models\BranchProductStock;
 use App\Models\Cart;
 use App\Models\CartItem;
+use App\Models\PaymentAccount;
 use App\Models\Sale;
+use App\Models\SalePayment;
 use App\Models\StockMovement;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -30,10 +32,47 @@ class SaleController extends Controller
             'payment_method' => ['required', Rule::enum(SalePaymentMethod::class)],
             'amount_paid' => ['nullable', 'numeric', 'min:0', 'max:9999999999.99'],
             'due_date' => ['nullable', 'date'],
+            'payments' => ['nullable', 'array', 'min:1'],
+            'payments.*.method' => ['required', Rule::in([
+                SalePaymentMethod::CASH->value,
+                SalePaymentMethod::TRANSFER->value,
+                SalePaymentMethod::POS->value,
+            ])],
+            'payments.*.amount' => ['required', 'numeric', 'gt:0', 'max:9999999999.99'],
+            'payments.*.payment_account_id' => ['nullable', Rule::exists('payment_accounts', 'id')->where('business_id', $request->user()->business_id)],
+            'payments.*.reference' => ['nullable', 'string', 'max:100'],
+            'payments.*.note' => ['nullable', 'string', 'max:255'],
         ]);
 
-        $paymentMethod = SalePaymentMethod::from($payload['payment_method']);
-        $amountPaid = (float) ($payload['amount_paid'] ?? 0);
+        $paymentLines = collect($payload['payments'] ?? []);
+
+        if ($paymentLines->isEmpty() && (float) ($payload['amount_paid'] ?? 0) > 0 && $payload['payment_method'] !== SalePaymentMethod::CREDIT->value) {
+            $paymentLines = collect([[
+                'method' => $payload['payment_method'],
+                'amount' => $payload['amount_paid'],
+            ]]);
+        }
+
+        if ($payload['payment_method'] === SalePaymentMethod::SPLIT->value && $paymentLines->count() < 2) {
+            return $this->response('Split payment must contain at least two payment methods', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        foreach ($paymentLines as $line) {
+            $method = SalePaymentMethod::from($line['method']);
+            $account = !empty($line['payment_account_id'])
+                ? PaymentAccount::query()->where('business_id', $request->user()->business_id)->where('id', $line['payment_account_id'])->first()
+                : null;
+
+            if (in_array($method, [SalePaymentMethod::TRANSFER, SalePaymentMethod::POS], true)
+                && (!$account || $account->type !== ($method === SalePaymentMethod::POS ? 'pos' : 'bank') || !$account->is_active)) {
+                return $this->response('Select an active matching account or POS terminal for each payment', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            }
+        }
+
+        $amountPaid = (float) $paymentLines->sum(fn (array $line) => (float) $line['amount']);
+        $paymentMethod = $paymentLines->count() > 1
+            ? SalePaymentMethod::SPLIT
+            : SalePaymentMethod::from($paymentLines->first()['method'] ?? $payload['payment_method']);
         $branch = $this->targetBranch($request);
         $cart = Cart::query()
             ->with(['items.product', 'customer'])
@@ -52,7 +91,7 @@ class SaleController extends Controller
             return $this->response('A customer must be selected for credit sales', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
 
-        $sale = DB::transaction(function () use ($request, $payload, $branch, $cart, $amountPaid, $paymentMethod) {
+        $sale = DB::transaction(function () use ($request, $payload, $branch, $cart, $amountPaid, $paymentMethod, $paymentLines) {
             $cart = Cart::query()
                 ->with(['items.product', 'customer'])
                 ->where('id', $cart->id)
@@ -88,6 +127,11 @@ class SaleController extends Controller
             $discount = min((float) $cart->discount, $subtotal);
             $total = max(0, $subtotal - $discount);
             $paid = min($amountPaid, $total);
+
+            if ($amountPaid > $total) {
+                abort(JsonResponse::HTTP_UNPROCESSABLE_ENTITY, 'Payment total cannot be greater than the sale total');
+            }
+
             $balance = max(0, $total - $paid);
             $status = $this->paymentStatus($total, $paid);
 
@@ -116,6 +160,19 @@ class SaleController extends Controller
                 'due_date' => $balance > 0 ? $payload['due_date'] : null,
                 'paid_at' => $balance <= 0 ? now() : null,
             ]);
+
+            $paymentLines->each(function (array $line) use ($sale, $request, $branch) {
+                $sale->payments()->create([
+                    'business_id' => $request->user()->business_id,
+                    'branch_id' => $branch->id,
+                    'user_id' => $request->user()->id,
+                    'payment_account_id' => $line['payment_account_id'] ?? null,
+                    'method' => $line['method'],
+                    'amount' => $line['amount'],
+                    'reference' => $line['reference'] ?? null,
+                    'note' => $line['note'] ?? null,
+                ]);
+            });
 
             $items->each(function (array $item) use ($sale, $request, $branch) {
                 $sale->items()->create([
@@ -159,7 +216,7 @@ class SaleController extends Controller
                 'checked_out_at' => now(),
             ]);
 
-            return $sale->fresh(['customer', 'user', 'items']);
+            return $sale->fresh(['customer', 'user', 'items', 'payments.account']);
         });
 
         return response()->json([
@@ -227,6 +284,22 @@ class SaleController extends Controller
                 'quantity' => $item->quantity,
                 'unit_price' => $item->unit_price,
                 'line_total' => $item->line_total,
+            ]),
+            'payments' => $sale->payments->map(fn (SalePayment $payment) => [
+                'id' => $payment->id,
+                'method' => $payment->method->value,
+                'amount' => $payment->amount,
+                'reference' => $payment->reference,
+                'note' => $payment->note,
+                'account' => $payment->account ? [
+                    'id' => $payment->account->id,
+                    'name' => $payment->account->name,
+                    'type' => $payment->account->type,
+                    'provider' => $payment->account->provider,
+                    'account_number' => $payment->account->account_number,
+                    'terminal_id' => $payment->account->terminal_id,
+                    'is_active' => $payment->account->is_active,
+                ] : null,
             ]),
         ];
     }

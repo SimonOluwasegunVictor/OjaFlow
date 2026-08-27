@@ -54,3 +54,25 @@
     0%, 100% { transform: translateX(-100%); }
     50% { transform: translateX(200%); }
 }
+
+.print-only {
+    display: none;
+}
+
+@media print {
+    body * {
+        visibility: hidden !important;
+    }
+
+    .print-only,
+    .print-only * {
+        visibility: visible !important;
+    }
+
+    .print-only {
+        display: block;
+        position: absolute;
+        inset: 0;
+        width: 100%;
+    }
+}

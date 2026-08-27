@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { AlertTriangle, Minus, Package, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-vue-next';
+import { AlertTriangle, CheckCircle2, Minus, Package, Plus, Search, ShoppingCart, Trash2, X } from 'lucide-vue-next';
 import { useCartStore } from '../../stores/cart';
+import { useAuthStore } from '../../stores/auth';
 import { useCustomerStore } from '../../stores/customers';
 import { useProductStore } from '../../stores/products';
 import { useSalesStore } from '../../stores/sales';
+import { usePaymentAccountStore } from '../../stores/paymentAccounts';
 import SearchableSelect from '../../components/ui/SearchableSelect.vue';
-import type { Product, SalePaymentMethod } from '../../types';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.vue';
+import BaseModal from '../../components/ui/BaseModal.vue';
+import type { Product, SalePaymentMethod, SalePayload } from '../../types';
 
 interface SearchableSelectOption {
   value: string;
@@ -15,24 +19,38 @@ interface SearchableSelectOption {
 }
 
 const cartStore = useCartStore();
+const auth = useAuthStore();
 const productStore = useProductStore();
 const customerStore = useCustomerStore();
 const salesStore = useSalesStore();
+const paymentAccountStore = usePaymentAccountStore();
 const search = ref('');
 const selectedCustomerId = ref('');
 const discount = ref(0);
 const checkoutOpen = ref(false);
 const paymentOpen = ref(false);
+const confirmOpen = ref(false);
+const successOpen = ref(false);
 const paymentMethod = ref<SalePaymentMethod>('cash');
 const amountPaid = ref(0);
 const dueDate = ref(defaultDueDate());
 const notice = ref('');
+const selectedAccountId = ref('');
+const reference = ref('');
+interface PaymentLine {
+  method: Exclude<SalePaymentMethod, 'credit' | 'split'>;
+  amount: number;
+  payment_account_id: string;
+  reference: string;
+}
+const paymentLines = ref<PaymentLine[]>([]);
 
 onMounted(async () => {
   await Promise.all([
     productStore.fetchProducts({ status: 'active' }),
     customerStore.fetchCustomers(),
     cartStore.fetchCart(),
+    paymentAccountStore.fetch(),
   ]);
 
   syncCartFields();
@@ -58,7 +76,10 @@ const cartItems = computed(() => cartStore.items);
 const subtotal = computed(() => cartStore.subtotal);
 const total = computed(() => cartStore.total);
 const itemCount = computed(() => cartStore.count);
-const balanceRemaining = computed(() => Math.max(0, total.value - Number(amountPaid.value || 0)));
+const paymentTotal = computed(() => paymentMethod.value === 'split'
+  ? paymentLines.value.reduce((sum, line) => sum + Number(line.amount || 0), 0)
+  : paymentMethod.value === 'credit' ? 0 : Number(amountPaid.value || 0));
+const balanceRemaining = computed(() => Math.max(0, total.value - paymentTotal.value));
 const selectedCustomer = computed(() => customerStore.customers.find((customer) => customer.id === selectedCustomerId.value) ?? null);
 const customerOptions = computed<SearchableSelectOption[]>(() => [
   { value: '', label: 'Walk-in Customer', description: 'No credit balance will be assigned' },
@@ -68,10 +89,12 @@ const customerOptions = computed<SearchableSelectOption[]>(() => [
     description: customer.phone ?? customer.email ?? 'Customer record',
   })),
 ]);
-const customerSelectionRequired = computed(() => ['credit', 'split'].includes(paymentMethod.value) && balanceRemaining.value > 0);
+const customerSelectionRequired = computed(() => balanceRemaining.value > 0);
 const creditNeedsCustomer = computed(() => customerSelectionRequired.value && !selectedCustomer.value);
 const needsDueDate = computed(() => balanceRemaining.value > 0);
-const canSubmitPayment = computed(() => Boolean(cartStore.cart?.id) && cartItems.value.length > 0 && !creditNeedsCustomer.value && (!needsDueDate.value || Boolean(dueDate.value)));
+const splitPaymentsValid = computed(() => paymentMethod.value !== 'split' || (paymentLines.value.length >= 2 && paymentLines.value.every((line) => Number(line.amount) > 0 && (line.method === 'cash' || Boolean(line.payment_account_id)))));
+const accountSelectionValid = computed(() => paymentMethod.value === 'cash' || paymentMethod.value === 'credit' || Boolean(selectedAccountId.value));
+const canSubmitPayment = computed(() => Boolean(cartStore.cart?.id) && cartItems.value.length > 0 && !creditNeedsCustomer.value && splitPaymentsValid.value && accountSelectionValid.value && (!needsDueDate.value || Boolean(dueDate.value)));
 const paymentMethods: Array<{ value: SalePaymentMethod; label: string }> = [
   { value: 'cash', label: 'Cash' },
   { value: 'transfer', label: 'Transfer' },
@@ -130,7 +153,8 @@ async function openPayment() {
 
   await updateCartMeta();
   amountPaid.value = total.value;
-  paymentMethod.value = selectedCustomer.value ? 'cash' : 'cash';
+  paymentMethod.value = 'cash';
+  paymentLines.value = [];
   dueDate.value = defaultDueDate();
   paymentOpen.value = true;
   notice.value = '';
@@ -147,10 +171,15 @@ async function submitSale() {
     return;
   }
 
+  const payments: SalePayload['payments'] = paymentMethod.value === 'split'
+    ? paymentLines.value.map((line) => ({ method: line.method, amount: Number(line.amount), payment_account_id: line.payment_account_id || null, reference: line.reference || null }))
+    : paymentMethod.value === 'credit' ? [] : [{ method: paymentMethod.value as Exclude<SalePaymentMethod, 'credit' | 'split'>, amount: Number(amountPaid.value || 0), payment_account_id: selectedAccountId.value || null, reference: reference.value || null }];
+
   const success = await salesStore.completeSale({
     cart_id: cartStore.cart.id,
     payment_method: paymentMethod.value,
-    amount_paid: Number(amountPaid.value || 0),
+    amount_paid: paymentTotal.value,
+    payments,
     due_date: balanceRemaining.value > 0 ? dueDate.value : null,
   });
 
@@ -163,12 +192,58 @@ async function submitSale() {
   amountPaid.value = 0;
   checkoutOpen.value = false;
   paymentOpen.value = false;
+  confirmOpen.value = false;
+  successOpen.value = true;
   await Promise.all([
     productStore.fetchProducts({ status: 'active' }).catch(() => undefined),
     customerStore.fetchCustomers().catch(() => undefined),
     cartStore.fetchCart().catch(() => undefined),
   ]);
   syncCartFields();
+}
+
+const accountOptions = computed(() => paymentAccountStore.accounts.filter((account) => account.type === (paymentMethod.value === 'pos' ? 'pos' : 'bank')));
+const splitAccountOptions = (method: PaymentLine['method']) => paymentAccountStore.accounts.filter((account) => account.type === (method === 'pos' ? 'pos' : 'bank'));
+
+function changePaymentMethod(method: SalePaymentMethod) {
+  paymentMethod.value = method;
+  selectedAccountId.value = '';
+  reference.value = '';
+
+  if (method === 'credit') amountPaid.value = 0;
+  if (method === 'split' && paymentLines.value.length < 2) {
+    paymentLines.value = [
+      { method: 'cash', amount: 0, payment_account_id: '', reference: '' },
+      { method: 'transfer', amount: 0, payment_account_id: '', reference: '' },
+    ];
+  }
+}
+
+function addPaymentLine() {
+  paymentLines.value.push({ method: 'cash', amount: 0, payment_account_id: '', reference: '' });
+}
+
+function removePaymentLine(index: number) {
+  if (paymentLines.value.length <= 2) return;
+  paymentLines.value.splice(index, 1);
+}
+
+function askForCheckoutConfirmation() {
+  if (canSubmitPayment.value) confirmOpen.value = true;
+}
+
+function startNewSale() {
+  successOpen.value = false;
+  paymentOpen.value = false;
+  selectedCustomerId.value = '';
+  paymentLines.value = [];
+  selectedAccountId.value = '';
+  reference.value = '';
+  notice.value = '';
+}
+
+function printReceipt() {
+  window.print();
 }
 
 function defaultDueDate() {
@@ -192,13 +267,6 @@ function defaultDueDate() {
           >
         </div>
 
-        <SearchableSelect
-          v-model="selectedCustomerId"
-          :options="customerOptions"
-          placeholder="Walk-in Customer"
-          search-placeholder="Search customers..."
-          @change="updateCartMeta"
-        />
       </div>
 
       <p v-if="productStore.error || customerStore.error || cartStore.error || salesStore.error" class="mb-4 rounded-lg bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700 dark:bg-rose-500/10 dark:text-rose-300">
@@ -254,16 +322,6 @@ function defaultDueDate() {
       </button>
 
       <div class="flex min-h-0 flex-1 flex-col">
-        <div class="hidden border-b border-slate-100 px-4 py-4 lg:block dark:border-white/[0.06]">
-          <SearchableSelect
-            v-model="selectedCustomerId"
-            :options="customerOptions"
-            placeholder="Walk-in Customer"
-            search-placeholder="Search customers..."
-            @change="updateCartMeta"
-          />
-        </div>
-
         <div class="min-h-0 flex-1 overflow-y-auto px-4 py-4">
           <div v-if="cartItems.length" class="space-y-4">
             <article v-for="item in cartItems" :key="item.id" class="grid grid-cols-[minmax(0,1fr)_auto] gap-3">
@@ -324,7 +382,7 @@ function defaultDueDate() {
     </aside>
 
     <div v-if="paymentOpen" class="fixed inset-0 z-50 grid place-items-end bg-black/45 px-0 sm:place-items-center sm:p-4">
-      <form class="max-h-[92dvh] w-full overflow-y-auto rounded-t-[20px] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.28)] dark:bg-gray-900 sm:max-w-md sm:rounded-[20px]" @submit.prevent="submitSale">
+      <form class="max-h-[92dvh] w-full overflow-y-auto rounded-t-[20px] bg-white p-5 shadow-[0_24px_80px_rgba(15,23,42,0.28)] dark:bg-gray-900 sm:max-w-md sm:rounded-[20px]" @submit.prevent="askForCheckoutConfirmation">
         <div class="mb-5 flex items-center justify-between gap-3">
           <h2 class="text-lg font-bold text-slate-950 dark:text-white">Complete Payment</h2>
           <button type="button" class="grid h-9 w-9 place-items-center rounded-lg text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-white/[0.06]" aria-label="Close payment" @click="paymentOpen = false">
@@ -355,7 +413,7 @@ function defaultDueDate() {
               :key="method.value"
               type="button"
               :class="['h-10 rounded-lg border text-sm font-bold transition', paymentMethod === method.value ? 'border-blue-600 bg-blue-600 text-white' : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-white/[0.08] dark:bg-gray-950 dark:text-slate-200']"
-              @click="paymentMethod = method.value; amountPaid = method.value === 'credit' ? 0 : amountPaid"
+              @click="changePaymentMethod(method.value)"
             >
               {{ method.label }}
             </button>
@@ -367,7 +425,7 @@ function defaultDueDate() {
           A customer must be selected for credit sales
         </div>
 
-        <div v-if="customerSelectionRequired" class="mt-4">
+        <div class="mt-4">
           <SearchableSelect
             v-model="selectedCustomerId"
             label="Customer"
@@ -378,10 +436,51 @@ function defaultDueDate() {
           />
         </div>
 
-        <label class="mt-4 grid gap-2 text-sm font-bold text-slate-900 dark:text-white">
+        <p class="mt-2 text-xs font-medium text-slate-400">Leave this as Walk-in Customer for a sale with no customer balance.</p>
+
+        <label v-if="paymentMethod !== 'split'" class="mt-4 grid gap-2 text-sm font-bold text-slate-900 dark:text-white">
           Amount Paid Now
           <input v-model.number="amountPaid" type="number" min="0" :max="total" class="h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold outline-none focus:border-blue-300 focus:ring-4 focus:ring-blue-100 dark:border-white/[0.08] dark:bg-gray-950">
         </label>
+
+        <div v-if="paymentMethod === 'transfer' || paymentMethod === 'pos'" class="mt-4 grid gap-3">
+          <label class="grid gap-2 text-sm font-bold text-slate-900 dark:text-white">
+            {{ paymentMethod === 'pos' ? 'POS machine' : 'Paid to account' }}
+            <select v-model="selectedAccountId" class="h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold outline-none dark:border-white/[0.08] dark:bg-gray-950">
+              <option value="">Select destination</option>
+              <option v-for="account in accountOptions" :key="account.id" :value="account.id">
+                {{ account.name }}{{ account.provider ? ` · ${account.provider}` : '' }}{{ account.account_number ? ` · ${account.account_number}` : account.terminal_id ? ` · ${account.terminal_id}` : '' }}
+              </option>
+            </select>
+          </label>
+          <label class="grid gap-2 text-sm font-bold text-slate-900 dark:text-white">
+            Reference (optional)
+            <input v-model="reference" type="text" placeholder="Transfer reference or POS receipt no." class="h-11 rounded-lg border border-slate-200 bg-white px-4 text-sm font-semibold outline-none dark:border-white/[0.08] dark:bg-gray-950">
+          </label>
+        </div>
+
+        <div v-if="paymentMethod === 'split'" class="mt-4 grid gap-3">
+          <div v-for="(line, index) in paymentLines" :key="index" class="rounded-xl border border-slate-200 p-3 dark:border-white/[0.08]">
+            <div class="flex items-center justify-between gap-3">
+              <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Payment {{ index + 1 }}</p>
+              <button v-if="paymentLines.length > 2" type="button" class="text-xs font-bold text-rose-600" @click="removePaymentLine(index)">Remove</button>
+            </div>
+            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+              <select v-model="line.method" class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold outline-none dark:border-white/[0.08] dark:bg-gray-950">
+                <option value="cash">Cash</option>
+                <option value="transfer">Transfer</option>
+                <option value="pos">POS</option>
+              </select>
+              <input v-model.number="line.amount" type="number" min="0" :max="total" placeholder="Amount" class="h-11 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold outline-none dark:border-white/[0.08] dark:bg-gray-950">
+            </div>
+            <select v-if="line.method !== 'cash'" v-model="line.payment_account_id" class="mt-3 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold outline-none dark:border-white/[0.08] dark:bg-gray-950">
+              <option value="">Select {{ line.method === 'pos' ? 'POS machine' : 'account' }}</option>
+              <option v-for="account in splitAccountOptions(line.method)" :key="account.id" :value="account.id">{{ account.name }}{{ account.provider ? ` · ${account.provider}` : '' }}{{ account.account_number ? ` · ${account.account_number}` : account.terminal_id ? ` · ${account.terminal_id}` : '' }}</option>
+            </select>
+            <input v-if="line.method !== 'cash'" v-model="line.reference" type="text" placeholder="Reference (optional)" class="mt-3 h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold outline-none dark:border-white/[0.08] dark:bg-gray-950">
+          </div>
+          <button type="button" class="h-10 rounded-lg border border-dashed border-blue-300 text-sm font-bold text-blue-600" @click="addPaymentLine">+ Add another payment method</button>
+        </div>
 
         <div class="mt-4 flex items-center justify-between text-sm">
           <span class="font-medium text-slate-500">Balance remaining</span>
@@ -398,5 +497,67 @@ function defaultDueDate() {
         </button>
       </form>
     </div>
+
+    <ConfirmDialog
+      v-model:open="confirmOpen"
+      title="Confirm checkout"
+      :description="`Record this sale for ${money(total)}? This will reduce stock and save the payment details.`"
+      confirm-label="Confirm sale"
+      :loading="salesStore.loading"
+      @confirm="submitSale"
+    />
+
+    <BaseModal :show="successOpen" title="Sale completed" @close="startNewSale">
+      <div class="grid justify-items-center gap-3 text-center">
+        <div class="grid h-14 w-14 place-items-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-300">
+          <CheckCircle2 class="h-7 w-7" />
+        </div>
+        <div>
+          <p class="text-lg font-bold text-slate-950 dark:text-white">Payment recorded</p>
+          <p class="mt-1 text-sm font-medium text-slate-500">{{ salesStore.lastSale?.order_number }}</p>
+        </div>
+        <div class="w-full rounded-xl bg-slate-50 p-4 text-left text-sm dark:bg-white/[0.04]">
+          <div class="flex justify-between gap-3"><span class="text-slate-500">Total</span><strong>{{ money(salesStore.lastSale?.total ?? 0) }}</strong></div>
+          <div class="mt-2 flex justify-between gap-3"><span class="text-slate-500">Paid</span><strong>{{ money(salesStore.lastSale?.amount_paid ?? 0) }}</strong></div>
+          <div class="mt-2 flex justify-between gap-3"><span class="text-slate-500">Balance</span><strong>{{ money(salesStore.lastSale?.balance_due ?? 0) }}</strong></div>
+        </div>
+        <div v-if="salesStore.lastSale?.payments.length" class="w-full text-left">
+          <p class="text-xs font-bold uppercase tracking-wide text-slate-500">Payment details</p>
+          <div v-for="payment in salesStore.lastSale.payments" :key="payment.id" class="mt-2 flex justify-between gap-3 text-xs">
+            <span class="font-semibold capitalize">{{ payment.method }}<span v-if="payment.account"> · {{ payment.account.name }}</span></span>
+            <strong>{{ money(payment.amount) }}</strong>
+          </div>
+        </div>
+        <div class="grid w-full gap-2 sm:grid-cols-2">
+          <button type="button" class="h-11 rounded-lg border border-slate-200 text-sm font-bold text-slate-700 dark:border-white/[0.08] dark:text-slate-200" @click="printReceipt">Print receipt</button>
+          <button type="button" class="h-11 rounded-lg bg-blue-600 text-sm font-bold text-white" @click="startNewSale">New sale</button>
+        </div>
+      </div>
+    </BaseModal>
+
+    <section v-if="salesStore.lastSale" class="print-only bg-white p-6 text-black">
+      <h1 class="text-xl font-bold">{{ auth.user?.business?.name ?? 'OjaFlow' }}</h1>
+      <p class="mt-1 text-sm">{{ salesStore.lastSale.order_number }} · {{ new Date(salesStore.lastSale.created_at).toLocaleString('en-NG') }}</p>
+      <p v-if="salesStore.lastSale.customer" class="mt-3 text-sm">Customer: {{ salesStore.lastSale.customer.name }}</p>
+      <div class="mt-5 border-y border-black py-3 text-sm">
+        <div v-for="item in salesStore.lastSale.items" :key="item.id" class="flex justify-between gap-4 py-1">
+          <span>{{ item.quantity }} × {{ item.product_name }}</span>
+          <span>{{ money(item.line_total) }}</span>
+        </div>
+      </div>
+      <div class="mt-4 space-y-1 text-sm">
+        <div class="flex justify-between"><span>Subtotal</span><span>{{ money(salesStore.lastSale.subtotal) }}</span></div>
+        <div class="flex justify-between"><span>Discount</span><span>-{{ money(salesStore.lastSale.discount) }}</span></div>
+        <div class="flex justify-between border-t border-black pt-2 font-bold"><span>Total</span><span>{{ money(salesStore.lastSale.total) }}</span></div>
+        <div class="flex justify-between"><span>Paid</span><span>{{ money(salesStore.lastSale.amount_paid) }}</span></div>
+        <div class="flex justify-between"><span>Balance</span><span>{{ money(salesStore.lastSale.balance_due) }}</span></div>
+      </div>
+      <div v-if="salesStore.lastSale.payments.length" class="mt-5 border-t border-black pt-3 text-xs">
+        <p class="font-bold">Payment details</p>
+        <p v-for="payment in salesStore.lastSale.payments" :key="payment.id" class="mt-1">
+          {{ payment.method.toUpperCase() }}: {{ money(payment.amount) }}<span v-if="payment.account"> · {{ payment.account.name }}</span><span v-if="payment.reference"> · Ref: {{ payment.reference }}</span>
+        </p>
+      </div>
+    </section>
   </div>
 </template>

@@ -7,10 +7,13 @@ import AppButton from '../../components/ui/AppButton.vue';
 import PageHeader from '../../components/dashboard/Pageheader.vue';
 import TextField from '../../components/ui/TextField.vue';
 import { useBusinessStore, type BusinessSettingsPayload } from '../../stores/business';
+import { usePaymentAccountStore, type PaymentAccountForm } from '../../stores/paymentAccounts';
+import ConfirmDialog from '../../components/ui/ConfirmDialog.vue';
 
 const auth = useAuthStore();
 const theme = useThemeStore();
 const businessStore = useBusinessStore();
+const paymentAccountStore = usePaymentAccountStore();
 const message = ref('');
 const form = reactive({
   first_name: '',
@@ -31,6 +34,9 @@ const businessForm = reactive<Omit<BusinessSettingsPayload, 'email' | 'phone' | 
   name: '', email: '', phone: '', address: '', receipt_footer: '', receipt_size: '80mm',
   settings: { sms_enabled: false, whatsapp_enabled: false, low_stock_alerts: true },
 });
+const accountForm = reactive<PaymentAccountForm>({ type: 'bank', name: '', provider: '', account_name: '', account_number: '', terminal_id: '' });
+const accountDeleteOpen = ref(false);
+const accountToDelete = ref<string | null>(null);
 
 const themeOptions: { label: string; value: ThemeMode; icon: Component }[] = [
   { label: 'Light', value: 'light', icon: Sun },
@@ -42,6 +48,7 @@ watch(() => auth.user, hydrate, { immediate: true });
 onMounted(async () => {
   if (auth.isAdmin) {
     await businessStore.fetch();
+    await paymentAccountStore.fetch();
     hydrate();
   }
 });
@@ -65,6 +72,29 @@ function hydrate() {
   businessForm.receipt_footer = business?.receipt_footer ?? null;
   businessForm.receipt_size = business?.receipt_size ?? '80mm';
   businessForm.settings = { ...businessForm.settings, ...(business?.settings ?? {}) };
+}
+
+async function addPaymentAccount() {
+  const saved = await paymentAccountStore.save({ ...accountForm });
+  if (saved) {
+    accountForm.name = '';
+    accountForm.provider = '';
+    accountForm.account_name = '';
+    accountForm.account_number = '';
+    accountForm.terminal_id = '';
+  }
+}
+
+function askDeleteAccount(id: string) {
+  accountToDelete.value = id;
+  accountDeleteOpen.value = true;
+}
+
+async function deletePaymentAccount() {
+  if (!accountToDelete.value) return;
+  await paymentAccountStore.remove(accountToDelete.value);
+  accountDeleteOpen.value = false;
+  accountToDelete.value = null;
 }
 
 async function submit() {
@@ -224,6 +254,32 @@ async function submit() {
                 <input v-model="businessForm.settings.whatsapp_enabled" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary" />
                 Enable WhatsApp sharing
               </label>
+              <div class="mt-2 border-t border-gray-100 pt-4 dark:border-white/[0.06]">
+                <p class="text-sm font-semibold text-gray-900 dark:text-white">Payment destinations</p>
+                <p class="mt-1 text-xs font-medium text-gray-500 dark:text-gray-400">Choose the bank account or POS machine used during checkout.</p>
+                <div class="mt-3 grid gap-3">
+                  <select v-model="accountForm.type" class="field">
+                    <option value="bank">Bank account</option>
+                    <option value="pos">POS machine</option>
+                  </select>
+                  <TextField v-model="accountForm.name" label="Display name" :placeholder="accountForm.type === 'pos' ? 'Main POS 1' : 'Business account'" />
+                  <TextField v-model="accountForm.provider" :label="accountForm.type === 'pos' ? 'POS provider' : 'Bank name'" placeholder="e.g. Opay, GTBank" />
+                  <TextField v-if="accountForm.type === 'bank'" v-model="accountForm.account_name" label="Account name" />
+                  <TextField v-if="accountForm.type === 'bank'" v-model="accountForm.account_number" label="Account number" />
+                  <TextField v-else v-model="accountForm.terminal_id" label="Terminal ID" />
+                  <button type="button" class="h-10 rounded-lg bg-blue-600 text-sm font-bold text-white disabled:opacity-50" :disabled="paymentAccountStore.loading || !accountForm.name" @click="addPaymentAccount">Add payment destination</button>
+                </div>
+                <div v-if="paymentAccountStore.accounts.length" class="mt-4 grid gap-2">
+                  <div v-for="account in paymentAccountStore.accounts" :key="account.id" class="flex items-center justify-between gap-3 rounded-lg border border-gray-200 p-3 dark:border-white/[0.08]">
+                    <div class="min-w-0">
+                      <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ account.name }}</p>
+                      <p class="truncate text-xs font-medium text-gray-500">{{ account.provider }} · {{ account.account_number || account.terminal_id }}</p>
+                    </div>
+                    <button type="button" class="shrink-0 text-xs font-bold text-rose-600" @click="askDeleteAccount(account.id)">Disable</button>
+                  </div>
+                </div>
+                <p v-if="paymentAccountStore.error" class="mt-3 text-xs font-semibold text-rose-600">{{ paymentAccountStore.error }}</p>
+              </div>
             </div>
           </section>
 
@@ -241,5 +297,14 @@ async function submit() {
         </div>
       </div>
     </div>
+    <ConfirmDialog
+      v-model:open="accountDeleteOpen"
+      title="Disable payment destination?"
+      description="It will no longer appear during checkout, but existing sales will keep their payment record."
+      confirm-label="Disable"
+      tone="danger"
+      :loading="paymentAccountStore.loading"
+      @confirm="deletePaymentAccount"
+    />
   </div>
 </template>

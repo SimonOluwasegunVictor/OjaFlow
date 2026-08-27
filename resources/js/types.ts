@@ -53,6 +53,21 @@ export interface User {
     updated_at: string;
 }
 
+export interface PaymentAccount {
+    id: string;
+    type: 'bank' | 'pos';
+    name: string;
+    provider: string | null;
+    account_name: string | null;
+    account_number: string | null;
+    terminal_id: string | null;
+    is_active: boolean;
+}
+
+export interface PaymentAccountsResponse {
+    accounts: PaymentAccount[];
+}
+
 export type ProductStatus = 'active' | 'archived';
 export type StockMovementType = 'purchase' | 'sale' | 'return' | 'damage' | 'correction' | 'manual_adjustment';
 
@@ -172,7 +187,14 @@ export interface SaleItemPayload {
 export interface SalePayload {
     cart_id: string;
     payment_method: SalePaymentMethod;
-    amount_paid: number;
+    amount_paid?: number;
+    payments?: Array<{
+        method: Exclude<SalePaymentMethod, 'credit' | 'split'>;
+        amount: number;
+        payment_account_id?: string | null;
+        reference?: string | null;
+        note?: string | null;
+    }>;
     due_date?: string | null;
 }
 
@@ -231,6 +253,14 @@ export interface Sale {
         quantity: number;
         unit_price: string;
         line_total: string;
+    }>;
+    payments: Array<{
+        id: string;
+        method: Exclude<SalePaymentMethod, 'credit' | 'split'>;
+        amount: string;
+        reference: string | null;
+        note: string | null;
+        account: PaymentAccount | null;
     }>;
 }
 
