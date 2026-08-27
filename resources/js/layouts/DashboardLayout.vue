@@ -66,7 +66,7 @@ async function logout() {
 </script>
 
 <template>
-  <main class="min-h-dvh bg-gray-50 text-gray-950 transition-colors dark:bg-gray-950 dark:text-gray-100">
+  <main class="min-h-dvh bg-gray-50 pt-[env(safe-area-inset-top)] text-gray-950 transition-colors dark:bg-gray-950 dark:text-gray-100">
     <MobileTopBar :title="title" :business-name="auth.user?.business?.name" :can-record-sale="auth.canUse('record_sales')" />
 
     <aside class="fixed inset-y-0 left-0 z-40 hidden w-[229px] border-r border-gray-200 bg-white dark:border-white/[0.07] dark:bg-gray-900 lg:flex lg:flex-col">

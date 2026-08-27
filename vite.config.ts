@@ -23,13 +23,17 @@ export default defineConfig({
     },
 
     server: {
-        host: 'ojaflow.test',
+        // NativePHP Jump proxies Vite through its LAN HTTP server. Keep the
+        // upstream Vite server on plain HTTP so Jump can rewrite its URLs
+        // for the phone; the Herd HTTPS hostname is not reachable there.
+        host: '127.0.0.1',
         port: 5173,
         strictPort: true,
+        https: false,
 
         ws: {
-            host: 'ojaflow.test',
-            protocol: 'wss',
+            host: 'localhost',
+            protocol: 'ws',
             port: 5173,
         },
     },

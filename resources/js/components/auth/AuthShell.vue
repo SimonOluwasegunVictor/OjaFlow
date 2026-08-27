@@ -3,7 +3,7 @@ import { Store } from 'lucide-vue-next';
 </script>
 
 <template>
-  <main class="auth-screen min-h-dvh bg-primary text-white">
+  <main class="auth-screen min-h-dvh bg-primary pt-[env(safe-area-inset-top)] text-white">
     <div class="mx-auto flex min-h-dvh w-full max-w-5xl flex-col px-5 py-7 sm:px-8 lg:px-10">
       <slot name="back" />
 
