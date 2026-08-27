@@ -27,8 +27,7 @@ class CustomerController extends Controller
             ->where('business_id', $request->user()->business_id)
             ->when($payload['search'] ?? null, function ($query, string $search) {
                 $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('phone', 'like', "%{$search}%");
+                    $query->whereAny(['name', 'phone'], 'like', "%{$search}%");
                 });
             })
             ->orderBy('name')
@@ -67,9 +66,7 @@ class CustomerController extends Controller
         $customer = $this->findCustomer($request, $customerId);
 
         if (!$customer) {
-            return response()->json([
-                'message' => 'Customer not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Customer not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $payload = $request->validate($this->rules($request, $customer->id));
@@ -145,8 +142,6 @@ class CustomerController extends Controller
 
     private function permissionDenied(): JsonResponse
     {
-        return response()->json([
-            'message' => 'You are not allowed to manage customers',
-        ], JsonResponse::HTTP_FORBIDDEN);
+            return $this->response('You are not allowed to manage customers', JsonResponse::HTTP_FORBIDDEN);
     }
 }

@@ -51,9 +51,7 @@ class BranchController extends Controller
         $branch = $this->findBranch($request, $branchId);
 
         if (!$branch) {
-            return response()->json([
-                'message' => 'Branch not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Branch not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         return response()->json([
@@ -66,9 +64,7 @@ class BranchController extends Controller
         $branch = $this->findBranch($request, $branchId);
 
         if (!$branch) {
-            return response()->json([
-                'message' => 'Branch not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Branch not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $payload = $request->validate([
@@ -89,9 +85,7 @@ class BranchController extends Controller
         $branch = $this->findBranch($request, $branchId);
 
         if (!$branch) {
-            return response()->json([
-                'message' => 'Branch not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Branch not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $payload = $request->validate([
@@ -99,9 +93,7 @@ class BranchController extends Controller
         ]);
 
         if ($branch->is_main && $payload['status'] !== BranchStatus::ACTIVE->value) {
-            return response()->json([
-                'message' => 'The main branch cannot be deactivated',
-            ], JsonResponse::HTTP_FORBIDDEN);
+            return $this->response('The main branch cannot be deactivated', JsonResponse::HTTP_FORBIDDEN);
         }
 
         $branch->update([

@@ -90,18 +90,20 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::query()
-            ->where('email', $payload['login'])
-            ->orWhere('phone', $payload['login'])
-            ->orWhere('username', $payload['login'])
-            ->first();
+        $user = User::whereAny(['email', 'phone', 'username'], '=', $payload['login'])->first();
 
         if (!$user || !Hash::check($payload['password'], $user->password)) {
-            return response()->json(['message' => 'Invalid credentials'], JsonResponse::HTTP_UNAUTHORIZED);
+            return $this->response(
+                message: 'Invalid credentials',
+                status: JsonResponse::HTTP_UNAUTHORIZED
+            );
         }
 
         if (!$user->isActive()) {
-            return response()->json(['message' => 'Your account is inactive'], JsonResponse::HTTP_FORBIDDEN);
+            return $this->response(
+                message: 'Your account is not active',
+                status: JsonResponse::HTTP_FORBIDDEN
+            );
         }
 
         $token = $user->createToken($user->role->value . '-token', [$user->role->value])->plainTextToken;
@@ -117,18 +119,14 @@ class AuthController extends Controller
         $user = User::find($userId);
 
         if (!$user) {
-            return response()->json([
-                'message' => 'User not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('User not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $authenticatedUser = $request->user();
         $isSelf = $authenticatedUser->id === $user->id;
 
         if (Gate::denies('update', $user)) {
-            return response()->json([
-                'message' => 'You are not authorized to update this user',
-            ], JsonResponse::HTTP_FORBIDDEN);
+            return $this->response('You are not authorized to update this user', JsonResponse::HTTP_FORBIDDEN);
         }
 
         $payload = $request->validate([
@@ -186,34 +184,26 @@ class AuthController extends Controller
         $user = User::find($userId);
 
         if (!$user) {
-            return response()->json([
-                'message' => 'User not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('User not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         if ($user->isAdmin()) {
-            return response()->json([
-                'message' => 'Business admins must be removed through a business closure or ownership transfer flow',
-            ], JsonResponse::HTTP_FORBIDDEN);
+            return $this->response('Business admins must be removed through a business closure or ownership transfer flow', JsonResponse::HTTP_FORBIDDEN);
         }
 
         if (Gate::denies('delete', $user)) {
-            return response()->json([
-                'message' => 'You are not authorized to delete this user',
-            ], JsonResponse::HTTP_FORBIDDEN);
+            return $this->response('You are not authorized to delete this user', JsonResponse::HTTP_FORBIDDEN);
         }
 
         $user->delete();
 
-        return response()->json([
-            'message' => 'User deleted successfully',
-        ], JsonResponse::HTTP_OK);
+        return $this->response('User deleted successfully');
     }
 
     public function logout(Request $request)
     {
         $request->user()->currentAccessToken()?->delete();
-        return response()->json(['message' => 'Successfully logged out'], JsonResponse::HTTP_OK);
+        return $this->response('Successfully logged out');
     }
 
     private function userPayload(User $user, string $token): array

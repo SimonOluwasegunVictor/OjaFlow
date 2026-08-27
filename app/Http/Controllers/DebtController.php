@@ -75,9 +75,7 @@ class DebtController extends Controller
             ->first();
 
         if (!$sale) {
-            return response()->json([
-                'message' => 'Debt not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Debt not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $sale = DB::transaction(function () use ($request, $sale, $payload) {
@@ -132,8 +130,6 @@ class DebtController extends Controller
 
     private function permissionDenied(): JsonResponse
     {
-        return response()->json([
-            'message' => 'You are not allowed to record debt payments',
-        ], JsonResponse::HTTP_FORBIDDEN);
+        return $this->response('You are not allowed to record debt payments', JsonResponse::HTTP_FORBIDDEN);
     }
 }

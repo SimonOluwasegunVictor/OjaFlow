@@ -3,9 +3,17 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use Illuminate\Http\JsonResponse;
 
 abstract class Controller
 {
+    protected function response(string $message, int $status = JsonResponse::HTTP_OK): JsonResponse
+    {
+        return response()->json([
+            'message' => $message,
+        ], $status);
+    }
+
     protected function userData(User $user): array
     {
         $user->loadMissing(['business', 'branch']);

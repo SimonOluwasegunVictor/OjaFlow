@@ -284,8 +284,9 @@ class CartController extends Controller
 
     private function permissionDenied(): JsonResponse
     {
-        return response()->json([
-            'message' => 'You are not allowed to record sales',
-        ], JsonResponse::HTTP_FORBIDDEN);
+        return $this->response(
+            message: 'You are not allowed to record sales',
+            status: JsonResponse::HTTP_FORBIDDEN
+        );
     }
 }

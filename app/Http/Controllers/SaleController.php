@@ -45,15 +45,11 @@ class SaleController extends Controller
             ->first();
 
         if (!$cart || $cart->items->isEmpty()) {
-            return response()->json([
-                'message' => 'Cart is empty or no longer active',
-            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->response('Cart is empty or no longer active', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         if ($paymentMethod === SalePaymentMethod::CREDIT && !$cart->customer_id) {
-            return response()->json([
-                'message' => 'A customer must be selected for credit sales',
-            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->response('A customer must be selected for credit sales', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $sale = DB::transaction(function () use ($request, $payload, $branch, $cart, $amountPaid, $paymentMethod) {
@@ -235,8 +231,6 @@ class SaleController extends Controller
 
     private function permissionDenied(): JsonResponse
     {
-        return response()->json([
-            'message' => 'You are not allowed to record sales',
-        ], JsonResponse::HTTP_FORBIDDEN);
+        return $this->response('You are not allowed to record sales', JsonResponse::HTTP_FORBIDDEN);
     }
 }

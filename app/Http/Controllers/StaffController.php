@@ -43,9 +43,7 @@ class StaffController extends Controller
         $admin = $request->user();
 
         if (Gate::denies('manageStaff', User::class)) {
-            return response()->json([
-                'message' => 'Only a business admin can create staff',
-            ], JsonResponse::HTTP_FORBIDDEN);
+            return $this->response('Only a business admin can create staff', JsonResponse::HTTP_FORBIDDEN);
         }
 
         $payload = $request->validate([
@@ -92,9 +90,7 @@ class StaffController extends Controller
         $staff = $this->findStaff($staffId, $request->user()->business_id);
 
         if (!$staff) {
-            return response()->json([
-                'message' => 'Staff not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Staff not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         return response()->json([
@@ -107,15 +103,11 @@ class StaffController extends Controller
         $staff = $this->findStaff($staffId, $request->user()->business_id);
 
         if (!$staff) {
-            return response()->json([
-                'message' => 'Staff not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Staff not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         if (Gate::denies('update', $staff)) {
-            return response()->json([
-                'message' => 'You are not authorized to update this staff',
-            ], JsonResponse::HTTP_FORBIDDEN);
+            return $this->response('You are not authorized to update this staff', JsonResponse::HTTP_FORBIDDEN);
         }
 
         $payload = $request->validate([
@@ -147,9 +139,7 @@ class StaffController extends Controller
         $staff = $this->findStaff($staffId, $request->user()->business_id);
 
         if (!$staff) {
-            return response()->json([
-                'message' => 'Staff not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Staff not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $payload = $request->validate([
@@ -170,9 +160,7 @@ class StaffController extends Controller
         $staff = $this->findStaff($staffId, $request->user()->business_id);
 
         if (!$staff) {
-            return response()->json([
-                'message' => 'Staff not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Staff not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $payload = $request->validate([
@@ -196,9 +184,7 @@ class StaffController extends Controller
         $staff = $this->findStaff($staffId, $request->user()->business_id);
 
         if (!$staff) {
-            return response()->json([
-                'message' => 'Staff not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Staff not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $payload = $request->validate([
@@ -220,22 +206,16 @@ class StaffController extends Controller
         $staff = $this->findStaff($staffId, $request->user()->business_id);
 
         if (!$staff) {
-            return response()->json([
-                'message' => 'Staff not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Staff not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         if (Gate::denies('delete', $staff)) {
-            return response()->json([
-                'message' => 'You are not authorized to delete this staff',
-            ], JsonResponse::HTTP_FORBIDDEN);
+            return $this->response('You are not authorized to delete this staff', JsonResponse::HTTP_FORBIDDEN);
         }
 
         $staff->delete();
 
-        return response()->json([
-            'message' => 'Staff deleted successfully',
-        ], JsonResponse::HTTP_OK);
+        return $this->response('Staff deleted successfully');
     }
 
     private function findStaff(string $staffId, string $businessId): ?User

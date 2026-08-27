@@ -37,8 +37,7 @@ class ProductController extends Controller
             ->when($payload['status'] ?? null, fn ($query, string $status) => $query->where('status', $status))
             ->when($payload['search'] ?? null, function ($query, string $search) {
                 $query->where(function ($query) use ($search) {
-                    $query->where('name', 'like', "%{$search}%")
-                        ->orWhere('sku', 'like', "%{$search}%");
+                    $query->whereAny(['name', 'sku'], 'like', "%{$search}%");
                 });
             })
             ->orderBy('name')
@@ -117,9 +116,7 @@ class ProductController extends Controller
         $product = $this->findProduct($request, $productId);
 
         if (!$product) {
-            return response()->json([
-                'message' => 'Product not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Product not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $payload = $request->validate([
@@ -148,9 +145,7 @@ class ProductController extends Controller
         $product = $this->findProduct($request, $productId);
 
         if (!$product) {
-            return response()->json([
-                'message' => 'Product not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Product not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $product->update([
@@ -171,9 +166,7 @@ class ProductController extends Controller
         $product = $this->findProduct($request, $productId);
 
         if (!$product) {
-            return response()->json([
-                'message' => 'Product not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Product not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $payload = $request->validate([
@@ -195,9 +188,7 @@ class ProductController extends Controller
         $quantity = abs((int) $payload['quantity']);
 
         if ($quantity < 1) {
-            return response()->json([
-                'message' => 'Quantity must be at least 1',
-            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
+            return $this->response('Quantity must be at least 1', JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         $stock = DB::transaction(function () use ($request, $product, $branch, $movementType, $quantity, $payload) {
@@ -258,9 +249,7 @@ class ProductController extends Controller
         $product = $this->findProduct($request, $productId);
 
         if (!$product) {
-            return response()->json([
-                'message' => 'Product not found',
-            ], JsonResponse::HTTP_NOT_FOUND);
+            return $this->response('Product not found', JsonResponse::HTTP_NOT_FOUND);
         }
 
         $payload = $request->validate([
@@ -436,8 +425,6 @@ class ProductController extends Controller
 
     private function permissionDenied(): JsonResponse
     {
-        return response()->json([
-            'message' => 'You are not allowed to manage products or stock',
-        ], JsonResponse::HTTP_FORBIDDEN);
+        return $this->response('You are not allowed to manage products or stock', JsonResponse::HTTP_FORBIDDEN);
     }
 }
